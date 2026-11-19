@@ -32,6 +32,7 @@
       rotationMin: 10,
       penaliteSec: 60,
       lienFin: "",
+      cachette: "",
       pin: "2026"
     };
   }
@@ -65,6 +66,7 @@
   const codeDe = e => (R().codes[e.id] || e.code);
   const actives = () => S.enigmes.filter(e => R().actives.includes(e.id));
   const fiche = id => S.fiches.find(f => f.id === id);
+  const cachette = () => (R().cachette || "").trim() || S.cachette;
 
   function fichesPour(index, nb) {
     if (nb <= 2) return [["A", "B"], ["C", "D"]][index] || [];
@@ -329,6 +331,7 @@
             <div class="champ"><label>Page du manuel après (énigmes)</label><input type="number" min="1" max="8" value="${r.seuilManuel}" data-set="num" data-k="seuilManuel"></div>
             <div class="champ"><label>Rotation des stations (minutes, 0 = circulation libre)</label><input type="number" min="0" max="30" value="${r.rotationMin}" data-set="num" data-k="rotationMin"></div>
           </div>
+          <div class="champ"><label>Cachette d'ARGO (affichée à l'ouverture du boîtier et à la révélation)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(r.cachette)}" data-set="txt" data-k="cachette"></div>
           <div class="champ"><label>Lien du QR code de fin (formulaire, inscription JPO…)</label><input type="url" placeholder="https://…" value="${esc(r.lienFin)}" data-set="txt" data-k="lienFin"></div>
           <div class="champ"><label>Code animateur (vide = pas de code)</label><input type="text" inputmode="numeric" maxlength="8" value="${esc(r.pin)}" data-set="txt" data-k="pin"></div>
         </section>
@@ -434,7 +437,7 @@
     const temps = p.finale.ouvertA && p.finale.debut ? fmt(p.finale.ouvertA - p.finale.debut - p.finale.pauseCumul + p.finale.penalites * PENALITE_FINALE_MS) : null;
     let corps = "";
     if (et === 0) {
-      corps = `<section class="panneau pile centre" style="background:var(--rouge);color:#fff;padding:64px"><span class="etiquette" style="color:#fff">Système déverrouillé${temps ? " en " + temps : ""}</span><h1 style="color:#fff;font-size:56px">${esc(S.cachette)}</h1><p style="font-size:22px">Allez chercher ARGO !</p></section>`;
+      corps = `<section class="panneau pile centre" style="background:var(--rouge);color:#fff;padding:64px"><span class="etiquette" style="color:#fff">Système déverrouillé${temps ? " en " + temps : ""}</span><h1 style="color:#fff;font-size:56px">${esc(cachette())}</h1><p style="font-size:22px">Allez chercher ARGO !</p></section>`;
     } else if (et === 1) {
       const res = p.equipes.map(eq => {
         const a = eq.accusation; const s = a && S.suspects.find(x => x.n === a.suspect); const m = a && S.methodes.find(x => x.id === a.methode);
@@ -672,7 +675,7 @@
     if (B.ouvertA) {
       const t = fmt(B.ouvertA - B.chrono.debut - B.chrono.pauseCumul + B.erreurs * PENALITE_FINALE_MS);
       return `<main class="ouvert"><div class="panneau pile centre" style="background:var(--vert);color:var(--encre);max-width:900px;padding:56px">
-        <span class="etiquette" style="color:var(--encre)">ARGO-LOCK · système déverrouillé en ${t}</span><h1 style="color:var(--encre);font-size:56px">${esc(S.cachette)}</h1>
+        <span class="etiquette" style="color:var(--encre)">ARGO-LOCK · système déverrouillé en ${t}</span><h1 style="color:var(--encre);font-size:56px">${esc(cachette())}</h1>
         <p style="font-size:20px">${pl(B.erreurs, "erreur")}. Bravo à toutes les équipes.</p>
         <div class="ligne" style="justify-content:center"><button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div></div></main>`;
     }
@@ -754,6 +757,7 @@
           <div><strong>Module B :</strong> ${{ bref: "un appui bref", long: "maintenir jusqu'à la jauge pleine (2 s)", double: "deux appuis brefs" }[boutonAttendu()]} (bouton ${B.bouton})</div>
           <div><strong>Module C :</strong> ${sequenceAttendue().join(", ")} (séquence ${B.sequence.join(", ")}, ${voyelle() ? "avec" : "sans"} voyelle)</div>
           <div><strong>Module D :</strong> ${codeAttendu()}</div></div>
+          <div class="champ mt"><label>Cachette d'ARGO affichée à l'ouverture (vide = texte par défaut)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(R().cachette)}" data-set="txt" data-k="cachette"></div>
           <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>`;
       }
     };
