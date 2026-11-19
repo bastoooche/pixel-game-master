@@ -1,6 +1,6 @@
 /* ARGO · Game master — service worker : tout est mis en cache pour jouer hors ligne.
    Après chaque modification des fichiers, augmenter VERSION pour que les tablettes se mettent à jour. */
-const VERSION = "argo-v0.2.0";
+const VERSION = "argo-v0.2.1";
 const FICHIERS = [
   "./", "index.html", "manifest.webmanifest", "css/app.css",
   "js/app.js", "js/scenario.js", "js/qrcode.js",

@@ -701,13 +701,19 @@
   }
 
   /* Bouton du module B : appui bref, long (3 s) ou double */
+  const APPUI_LONG_MS = 1500;   // appui long : jauge pleine (verte) + bip, environ 2 secondes en ressenti
   let bAppui = 0, bAttente = null, bJauge = null, bDernierBref = 0;
   function bDown() {
     if (B.ok.B || B.ouvertA) return;
     bAppui = now();
     const j = $("#jaugeB");
     clearInterval(bJauge);
-    bJauge = setInterval(() => { if (j) j.style.width = Math.min(100, (now() - bAppui) / 30) + "%"; }, 50);
+    let bipe = false;
+    bJauge = setInterval(() => {
+      const d = now() - bAppui;
+      if (j) { j.style.width = Math.min(100, d / (APPUI_LONG_MS / 100)) + "%"; j.style.background = d >= APPUI_LONG_MS ? "var(--vert)" : "var(--creme)"; }
+      if (d >= APPUI_LONG_MS && !bipe) { bipe = true; son("tic"); try { navigator.vibrate && navigator.vibrate(60); } catch (e) {} }
+    }, 40);
   }
   function bUp() {
     if (!bAppui) return;
@@ -717,7 +723,7 @@
     if (d < 700) {
       if (bAttente && now() - bDernierBref < 900) { clearTimeout(bAttente); bAttente = null; geste = "double"; }
       else { bDernierBref = now(); bAttente = setTimeout(() => { bAttente = null; evaluerBouton("bref"); }, 900); return; }
-    } else if (d >= 2500 && d < 8000) geste = "long";
+    } else if (d >= APPUI_LONG_MS && d < 8000) geste = "long";
     else geste = "invalide";
     evaluerBouton(geste);
   }
@@ -745,7 +751,7 @@
         const f = B.fils[filAttendu()];
         return `<div class="entete"><h2>Boîtier · animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
           <div class="carte pile"><div><strong>Module A :</strong> débrancher le fil n° ${filAttendu() + 1} (${f})</div>
-          <div><strong>Module B :</strong> ${{ bref: "un appui bref", long: "maintenir 3 secondes", double: "deux appuis brefs" }[boutonAttendu()]} (bouton ${B.bouton})</div>
+          <div><strong>Module B :</strong> ${{ bref: "un appui bref", long: "maintenir jusqu'à la jauge pleine (2 s)", double: "deux appuis brefs" }[boutonAttendu()]} (bouton ${B.bouton})</div>
           <div><strong>Module C :</strong> ${sequenceAttendue().join(", ")} (séquence ${B.sequence.join(", ")}, ${voyelle() ? "avec" : "sans"} voyelle)</div>
           <div><strong>Module D :</strong> ${codeAttendu()}</div></div>
           <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>`;
