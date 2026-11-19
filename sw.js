@@ -1,6 +1,6 @@
 /* ARGO · Game master — service worker : tout est mis en cache pour jouer hors ligne.
    Après chaque modification des fichiers, augmenter VERSION pour que les tablettes se mettent à jour. */
-const VERSION = "argo-v0.2.5";
+const VERSION = "argo-v0.2.6";
 const FICHIERS = [
   "./", "index.html", "manifest.webmanifest", "css/app.css",
   "js/app.js", "js/scenario.js", "js/qrcode.js",
@@ -9,7 +9,7 @@ const FICHIERS = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FICHIERS.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));

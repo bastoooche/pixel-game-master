@@ -4,6 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "argo-gm:" + S.id;
   const LS_BOITIER = "argo-gm:boitier:" + S.id;
+  const VERSION_APP = "v0.2.6";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -288,7 +289,7 @@
     return barre() + `<main class="page"><div class="accueil-hero">
       <section class="panneau rouge pile"><span class="etiquette" style="color:#fff">Jeu d'enquête · 1h30 · 2 à 6 équipes</span>
         <h1>${esc(S.titre)}</h1><p style="font-size:22px">${esc(S.accroche)}</p>
-        <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.</p></section>
+        <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.<br><span style="font-size:14px;opacity:.8">Version ${VERSION_APP}</span></p></section>
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
         <div class="grille g2">
@@ -944,7 +945,16 @@
   /* ------------------------------------------------------------------ */
   rendre();
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    const avaitControleur = !!navigator.serviceWorker.controller;
+    let recharge = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!avaitControleur || recharge) return;
+      recharge = true; location.reload();   // nouvelle version installée : on recharge une fois
+    });
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(reg => {
+      reg.update();
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update(); });
+    }).catch(() => {}));
   }
   window.__argo = { store, actions, get B() { return B; }, filAttendu, boutonAttendu, sequenceAttendue, codeAttendu }; // pour les tests
 })();
