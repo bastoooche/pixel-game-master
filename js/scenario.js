@@ -107,9 +107,9 @@ window.SCENARIO = {
     },
     {
       id: "E8", nom: "Le vrai du faux", domaine: "Intelligence artificielle", code: "3390", minutes: 10, reference: true,
-      coups: ["Regarde les mains, les textes et les reflets : c'est là que l'IA se trompe le plus souvent. Le guide de détection est sur la table.", "La photo du restaurant à 23h45 est fausse (regarde la main qui tient le verre). Il en reste 3 à trouver."],
-      solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot (0). Code 3390.",
-      debrief: { fait: "Tu as repéré des images générées par IA.", isen: "L'IA crée, l'ingénieur vérifie : détecter les contenus générés, c'est un vrai sujet de recherche et de cybersécurité." }
+      coups: ["Ne regarde pas l'image, regarde ses infos : appareil, nom du fichier, taille, lieu, heure. Deux incohérences ou plus = une fausse.", "La photo du restaurant à 23h45 est fausse : son GPS dit Toulon et sa taille est un carré parfait. Il en reste 3 à trouver."],
+      solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot en plein soleil (0). Code 3390.",
+      debrief: { fait: "Tu as démasqué des images IA parfaitement réalistes en enquêtant sur leurs infos.", isen: "On ne croit plus une image, on vérifie sa provenance : c'est le travail des ingénieurs en cybersécurité et en investigation numérique." }
     }
   ],
 
