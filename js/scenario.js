@@ -69,7 +69,7 @@ window.SCENARIO = {
       debrief: { fait: "Tu as lu la valeur d'un composant électronique.", isen: "C'est le premier geste de l'électronique, qu'on pratique dès le cycle préparatoire." }
     },
     {
-      id: "E2", nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: true,
+      id: "E2", nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: false,
       coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
       solution: "Les 4 circuits fermés affichent 3, 8, 5, 6 de gauche à droite. Code 3856.",
       debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
@@ -106,10 +106,10 @@ window.SCENARIO = {
       debrief: { fait: "Tu as décodé le signal d'un système embarqué.", isen: "La micro:bit est un vrai système embarqué : même principe qu'un capteur industriel." }
     },
     {
-      id: "E8", nom: "Le vrai du faux", domaine: "Intelligence artificielle", code: "3390", minutes: 8, reference: false,
-      coups: ["Regarde les mains et les textes.", "Trois des fausses sont prises en soirée."],
-      solution: "Les 4 photos générées par IA, dans l'ordre de l'heure, portent 3, 3, 9, 0. Code 3390.",
-      debrief: { fait: "Tu as repéré des images générées par IA.", isen: "L'IA crée, l'ingénieur vérifie : l'esprit critique fait partie du métier." }
+      id: "E8", nom: "Le vrai du faux", domaine: "Intelligence artificielle", code: "3390", minutes: 10, reference: true,
+      coups: ["Regarde les mains, les textes et les reflets : c'est là que l'IA se trompe le plus souvent. Le guide de détection est sur la table.", "La photo du restaurant à 23h45 est fausse (regarde la main qui tient le verre). Il en reste 3 à trouver."],
+      solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot (0). Code 3390.",
+      debrief: { fait: "Tu as repéré des images générées par IA.", isen: "L'IA crée, l'ingénieur vérifie : détecter les contenus générés, c'est un vrai sujet de recherche et de cybersécurité." }
     }
   ],
 
