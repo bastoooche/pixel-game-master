@@ -112,21 +112,21 @@ window.SCENARIO = {
       solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot en plein soleil (0). Code 3390.",
       debrief: { fait: "Tu as démasqué des images IA parfaitement réalistes en enquêtant sur leurs infos.", isen: "On ne croit plus une image, on vérifie sa provenance : c'est le travail des ingénieurs en cybersécurité et en investigation numérique." }
     },
-    // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Même code que E2 : n'en activer qu'une des deux.
+    // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Peut s'ajouter en cours de partie en plus de E2.
     {
-      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: false,
+      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "6419", minutes: 10, reference: false, pret: true,
       coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
-      solution: "Les 4 circuits fermés affichent 3, 8, 5, 6 de gauche à droite. Code 3856.",
+      solution: "Les 4 circuits fermés affichent 6, 4, 1, 9 de gauche à droite. Code 6419.",
       debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
     }
   ],
 
   // Énigme E9 (Makey Makey) : touches envoyées par le Makey Makey → chiffre affiché par la station
   stationCircuit: [
-    { touche: "ArrowUp", porte: "Porte Haut", chiffre: "3" },
-    { touche: "ArrowDown", porte: "Porte Bas", chiffre: "8" },
-    { touche: "ArrowLeft", porte: "Porte Gauche", chiffre: "5" },
-    { touche: "ArrowRight", porte: "Porte Droite", chiffre: "6" }
+    { touche: "ArrowUp", porte: "Porte Haut", chiffre: "6" },
+    { touche: "ArrowDown", porte: "Porte Bas", chiffre: "4" },
+    { touche: "ArrowLeft", porte: "Porte Gauche", chiffre: "1" },
+    { touche: "ArrowRight", porte: "Porte Droite", chiffre: "9" }
   ],
 
   // Pages du manuel du boîtier, attribuées aux équipes dans l'ordre

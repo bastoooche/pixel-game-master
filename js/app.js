@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.3.0";
+  const VERSION_APP = "v1.4.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -65,7 +65,9 @@
   const couleur = id => COULEURS.find(c => c.id === id) || COULEURS[0];
   const enigme = id => S.enigmes.find(e => e.id === id);
   const codeDe = e => (R().codes[e.id] || e.code);
-  const actives = () => S.enigmes.filter(e => R().actives.includes(e.id));
+  // Stations de la rotation : figées au lancement de la partie. Énigmes en plus : ajoutées à la volée, hors rotation.
+  const stationsBase = () => { const p = P(), ids = p && p.stations ? p.stations : R().actives; return S.enigmes.filter(e => ids.includes(e.id)); };
+  const actives = () => { const p = P(), ids = new Set(p && p.stations ? p.stations : R().actives); ((p && p.bonus) || []).forEach(id => ids.add(id)); return S.enigmes.filter(e => ids.has(e.id)); };
   const fiche = id => S.fiches.find(f => f.id === id);
   const cachette = () => (R().cachette || "").trim() || S.cachette;
 
@@ -97,7 +99,7 @@
   function rotation() {
     const p = P(), min = Number(R().rotationMin) || 0;
     if (!p || !min || !p.enquete.debut) return null;
-    const st = actives(), nb = Math.max(p.equipes.length, st.length), dur = min * 60000, e = ecoule(p.enquete);
+    const st = stationsBase(), nb = Math.max(p.equipes.length, st.length), dur = min * 60000, e = ecoule(p.enquete);
     const e2 = e + (p.avanceMs || 0);          // avance cumulée quand un tour est écourté
     const tour = Math.floor(e2 / dur) + 1;
     return { tour, nb, dur, reste: dur - (e2 % dur), fini: tour > nb };
@@ -116,12 +118,12 @@
     p.tousFinisA = null; save(); tic();
   }
   function stationDe(i, tour) {
-    const st = actives(), nb = Math.max(P().equipes.length, st.length);
+    const st = stationsBase(), nb = Math.max(P().equipes.length, st.length);
     const k = (i + tour - 1) % nb;
     return k < st.length ? st[k] : null;
   }
   function tableauRotation() {
-    const p = P(), st = actives(), nb = Math.max(p.equipes.length, st.length), min = Number(R().rotationMin);
+    const p = P(), st = stationsBase(), nb = Math.max(p.equipes.length, st.length), min = Number(R().rotationMin);
     const tete = p.equipes.map(eq => `<th><span class="couleur-pastille" style="background:${couleur(eq.couleur).hex};width:18px;height:18px;display:inline-block;vertical-align:middle"></span> ${esc(eq.nom.replace(/^Équipe /, ""))}</th>`).join("");
     let lignes = "";
     for (let t = 1; t <= nb; t++) {
@@ -137,6 +139,14 @@
     el.innerHTML = `<div class="an-boite" data-a="fermerAnnonce"><div class="an-t">On tourne !</div><div class="an-s">Tour ${t} · passez à la station suivante</div>${lignes}<div class="an-f">Touchez pour fermer</div></div>`;
     el.classList.remove("cache");
     clearTimeout(annonceT); annonceT = setTimeout(() => el.classList.add("cache"), 12000);
+  }
+
+  function annoncerBonus(e) {
+    const el = $("#annonce");
+    if (!el) return;
+    el.innerHTML = `<div class="an-boite" data-a="fermerAnnonce"><div class="an-t">Nouvelle énigme !</div><div class="an-s">${esc(e.id)} · ${esc(e.nom)} · ${esc(e.domaine)}</div><div class="an-l" style="justify-content:center"><span>Une nouvelle table vient d'ouvrir. Les équipes qui ont fini leur station peuvent y aller, à tour de rôle. Elle rapporte ${PTS.enigme} points.</span></div><div class="an-f">Touchez pour fermer</div></div>`;
+    el.classList.remove("cache");
+    clearTimeout(annonceT); annonceT = setTimeout(() => el.classList.add("cache"), 15000);
   }
 
   /* ------------------------------------------------------------------ */
@@ -246,7 +256,9 @@
       enquete: { debut: null, pauseDebut: null, pauseCumul: 0, bonusMs: 0 },
       finale: { debut: null, pauseDebut: null, pauseCumul: 0, penalites: 0, ouvertA: null },
       etape: 0,
-      finSonnee: false
+      finSonnee: false,
+      stations: R().actives.slice(),
+      bonus: []
     };
     save();
     aller("jeu");
@@ -262,7 +274,7 @@
       if (!n || n > N || connus.has(n)) { n = 0; for (let k = 1; k < N; k++) if (!connus.has(k)) { n = k; break; } }
       if (n) connus.add(n);
     }
-    if (eq.resolues.length >= actives().length) for (let k = 1; k <= N; k++) connus.add(k);
+    if (stationsBase().every(e => eq.resolues.some(r => r.id === e.id))) for (let k = 1; k <= N; k++) connus.add(k);
     return connus;
   }
   function saisirCode(iEq, code) {
@@ -578,6 +590,17 @@
     };
   }
 
+  function sectionAjout() {
+    const act = actives(), libres = S.enigmes.filter(e => !act.some(x => x.id === e.id)).sort((x, y) => (y.pret ? 1 : 0) - (x.pret ? 1 : 0));
+    if (!libres.length) return "";
+    const lignes = libres.map(e => {
+      const conflit = act.find(x => codeDe(x) === codeDe(e));
+      return `<div class="ligne"><span style="flex:1"><strong>${esc(e.id)} · ${esc(e.nom)}</strong> <span class="douce">${esc(e.domaine)} · ${e.minutes} min${e.pret ? "" : " · matériel à préparer"}</span>${conflit ? `<br><span class="douce">Même code que ${esc(conflit.id)} : changez-le dans les Réglages pour l'ajouter.</span>` : ""}</span>
+        <button class="btn petit ${conflit ? "contour" : "bleu"}" data-a="ajouterEnigme" data-id="${e.id}" ${conflit ? "disabled" : ""}>Ajouter</button></div>`;
+    }).join("");
+    return `<h3 class="mt">Ajouter une énigme en cours de partie</h3><p class="douce" style="margin:0 0 8px">Pour les équipes qui avancent vite : posez son matériel sur une table libre. Elle n'entre pas dans la rotation, les équipes y vont quand elles ont fini leur station.</p><div class="pile">${lignes}</div>`;
+  }
+
   function fenetreAnimateur() {
     return {
       rendu() {
@@ -589,6 +612,7 @@
         return `<div class="entete"><h2>Animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
           ${enq ? `<div class="ligne"><button class="btn" data-a="pauseEnquete">${enPause ? "Reprendre le chrono" : "Mettre en pause"}</button><button class="btn contour" data-a="bonus" data-d="5">+5 min</button><button class="btn contour" data-a="bonus" data-d="-5">−5 min</button></div>` : ""}
           ${!br ? `<h3 class="mt">Pages du manuel</h3><div class="pile">${fiches}</div>` : ""}
+          ${enq ? sectionAjout() : ""}
           <h3 class="mt">Phase</h3><div class="ligne">
             ${enq && rotation() && !rotation().fini ? `<button class="btn" data-a="tourSuivant">Tour suivant maintenant</button>` : ""}
             ${enq ? `<button class="btn bleu" data-a="versAccusation">Fin de l'enquête → accusation</button>` : ""}
@@ -845,6 +869,14 @@
       const go = () => { p.phase = "finale"; save(); fermer(); rendre(); };
       if (sans) demander(pl(sans, "équipe") + " sans accusation", "Elles ne pourront plus accuser après. Passer quand même à la finale ?", "Passer à la finale", go);
       else go();
+    },
+    ajouterEnigme(d) {
+      const e = enigme(d.id);
+      if (!e) return;
+      avecCode(() => demander(`Ajouter ${e.id} · ${e.nom} ?`, "Une annonce prévient les équipes. Son matériel doit être prêt sur une table libre. L'énigme reste dans la partie jusqu'à la fin.", "Ajouter l'énigme", () => {
+        const p = P(); p.bonus = p.bonus || []; if (!p.bonus.includes(e.id)) p.bonus.push(e.id);
+        p.toutResoluVu = false; save(); son("fin"); fermer(); rendre(); annoncerBonus(e);
+      }));
     },
     tourSuivant() {
       const rot = rotation();
