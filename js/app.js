@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.2.0";
+  const VERSION_APP = "v1.3.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -252,6 +252,19 @@
     aller("jeu");
   }
 
+  /* Indices connus d'une équipe : celui de chaque énigme résolue (ou le premier libre si déjà connu),
+     et tous les indices restants quand l'équipe a résolu toutes les énigmes de la séance. */
+  function indicesConnus(eq) {
+    const N = S.indices.length, connus = new Set();
+    for (const r of eq.resolues) {
+      const e = enigme(r.id);
+      let n = e && e.indice;
+      if (!n || n > N || connus.has(n)) { n = 0; for (let k = 1; k < N; k++) if (!connus.has(k)) { n = k; break; } }
+      if (n) connus.add(n);
+    }
+    if (eq.resolues.length >= actives().length) for (let k = 1; k <= N; k++) connus.add(k);
+    return connus;
+  }
   function saisirCode(iEq, code) {
     const p = P(), eq = p.equipes[iEq];
     const e = actives().find(x => codeDe(x) === code);
@@ -260,9 +273,11 @@
       eq.erreurs++; eq.verrouJusqua = now() + R().penaliteSec * 1000; save(); son("err");
       return { type: "faux" };
     }
+    const avant = indicesConnus(eq);
     eq.resolues.push({ id: e.id, t: now() }); save(); son("ok");
     const k = eq.resolues.length;
-    return { type: "ok", e, indice: S.indices[k - 1] || null, rang: k, fiche: k === R().seuilManuel && eq.fiches.length ? eq.fiches : null };
+    const nouveaux = [...indicesConnus(eq)].filter(n => !avant.has(n)).sort((x, y) => x - y).map(n => ({ n, ...S.indices[n - 1] }));
+    return { type: "ok", e, indices: nouveaux, rang: k, fiche: k === R().seuilManuel && eq.fiches.length ? eq.fiches : null };
   }
 
   /* ------------------------------------------------------------------ */
@@ -498,7 +513,8 @@
       vueResultat() {
         const r = this.resultat;
         if (r.type === "deja") return `<div class="carte centre"><h3>Énigme déjà résolue</h3><p>${esc(r.e.id)} · ${esc(r.e.nom)}. Pas de pénalité, va vers une autre station.</p></div><div class="ligne mt" style="justify-content:center"><button class="btn" data-a="fermer">OK</button></div>`;
-        const ind = r.indice ? `<div class="carte indice mt"><div class="num">Indice n° ${r.rang} · ${esc(r.indice.titre)}</div><p style="font-size:21px;margin:6px 0 0">${esc(r.indice.texte)}</p></div>` : `<div class="carte mt"><p style="margin:0">Vous avez déjà tous les indices. Chaque énigme rapporte quand même ${PTS.enigme} points.</p></div>`;
+        const bonus = r.indices.length > 1 ? `<p class="centre" style="margin:12px 0 0;font-weight:700">Toutes vos énigmes sont résolues : vous gagnez aussi le dernier indice !</p>` : "";
+        const ind = r.indices.length ? bonus + r.indices.map(i => `<div class="carte indice mt"><div class="num">Indice n° ${i.n} · ${esc(i.titre)}</div><p style="font-size:21px;margin:6px 0 0">${esc(i.texte)}</p></div>`).join("") : `<div class="carte mt"><p style="margin:0">Pas de nouvel indice avec cette énigme. Elle rapporte quand même ${PTS.enigme} points.</p></div>`;
         const fi = r.fiche ? `<div class="carte mt" style="border:2px solid var(--bleu)"><div class="num" style="color:var(--bleu)">Pour la finale</div><p style="font-size:19px;margin:6px 0 0">Vous avez gagné votre page du manuel : <strong>${esc(nomsFiches(r.fiche))}</strong>. Allez la chercher auprès de l'animateur et gardez-la secrète.</p></div>` : "";
         return `<div class="centre"><span class="etiquette">Énigme résolue · +${PTS.enigme} points</span><h2 style="margin-top:6px">${esc(r.e.id)} · ${esc(r.e.nom)}</h2></div>${ind}${fi}<div class="ligne mt" style="justify-content:center"><button class="btn grand" data-a="fermer">Compris</button></div>`;
       },
@@ -517,10 +533,10 @@
           <div class="ligne mt">${suivant}<button class="btn contour" data-a="retourCoups">Autre énigme</button><button class="btn contour" data-a="onglet" data-o="code">Saisir un code</button></div>`;
       },
       vueDossier() {
-        const obtenus = eq.resolues.length;
-        const cartes = S.indices.map((ind, k) => k < obtenus
+        const connus = indicesConnus(eq), N = S.indices.length;
+        const cartes = S.indices.map((ind, k) => connus.has(k + 1)
           ? `<div class="carte indice"><div class="num">Indice n° ${k + 1} · ${esc(ind.titre)}</div><p style="margin:4px 0 0;font-size:19px">${esc(ind.texte)}</p></div>`
-          : `<div class="carte verrouille"><div class="num" style="color:var(--encre-douce)">Indice n° ${k + 1}</div><p style="margin:4px 0 0">Résous une énigme de plus pour le débloquer.</p></div>`).join("");
+          : `<div class="carte verrouille"><div class="num" style="color:var(--encre-douce)">Indice n° ${k + 1}</div><p style="margin:4px 0 0">${k + 1 === N ? "Résolvez toutes les énigmes pour le débloquer." : "Il se cache derrière une énigme que vous n'avez pas encore résolue."}</p></div>`).join("");
         return `<div class="pile">${cartes}</div><h3 class="mt">Les suspects</h3>${cartesSuspects()}<div class="ligne mt"><button class="btn contour" data-a="onglet" data-o="code">Retour</button></div>`;
       },
       touche(k) {

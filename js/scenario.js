@@ -43,7 +43,8 @@ window.SCENARIO = {
     { id: "vol", label: "Badge volé dans le casier" }
   ],
 
-  // Donnés dans l'ordre, au fil des énigmes résolues par chaque équipe
+  // Chaque énigme donne son indice (champ « indice » des énigmes, n° 1 à 5).
+  // Le dernier indice est donné en bonus à l'équipe qui a résolu toutes les énigmes de la séance.
   indices: [
     { titre: "Journal de la porte", texte: "La porte du Fablab a été ouverte à 23h47 avec le badge d'Inès Daoud." },
     { titre: "Casier connecté", texte: "Le casier d'Inès, où elle range son badge, n'a pas été ouvert entre 18h et 8h. Son badge n'en est jamais sorti : quelqu'un a utilisé une copie." },
@@ -63,57 +64,57 @@ window.SCENARIO = {
   // Banque d'énigmes. "reference: true" = sélection par défaut pour 1h30.
   enigmes: [
     {
-      id: "E1", nom: "Le code des résistances", domaine: "Électronique", code: "4216", minutes: 6, reference: true,
+      id: "E1", indice: 2, nom: "Le code des résistances", domaine: "Électronique", code: "4216", minutes: 6, reference: true,
       coups: ["Chaque couleur vaut un chiffre.", "La 1re bande est celle collée au bord, à l'opposé de la bande dorée."],
       solution: "Premières bandes de R1 à R4 : jaune (4), rouge (2), marron (1), bleu (6). Code 4216.",
       debrief: { fait: "Tu as lu la valeur d'un composant électronique.", isen: "C'est le premier geste de l'électronique, qu'on pratique dès le cycle préparatoire." }
     },
     {
-      id: "E2", nom: "La machine à prédire", domaine: "Intelligence artificielle", code: "3856", minutes: 8, reference: true,
+      id: "E2", indice: 4, nom: "La machine à prédire", domaine: "Intelligence artificielle", code: "3856", minutes: 8, reference: true,
       coups: ["Comparez bien les pourcentages : c'est souvent serré, et PIXEL-IA prend toujours le plus haut. Arrêtez-vous au mot FIN.", "La phrase commence par : LE CODE DU SERVEUR EST…"],
       solution: "LE CODE DU SERVEUR EST TROIS HUIT CINQ SIX FIN. Code 3856.",
       debrief: { fait: "Tu as fait parler une IA mot par mot, exactement comme ChatGPT.", isen: "Une IA générative ne comprend pas ce qu'elle écrit : elle prédit le mot le plus probable. Si un mauvais mot passe devant, elle continue avec aplomb : c'est une hallucination. À l'ISEN, on apprend à construire ces modèles et à vérifier ce qu'ils disent." }
     },
     {
-      id: "E3", nom: "Le disque de César", domaine: "Cybersécurité", code: "7209", minutes: 8, reference: true,
+      id: "E3", indice: 3, nom: "Le disque de César", domaine: "Cybersécurité", code: "7209", minutes: 8, reference: true,
       coups: ["La mascotte s'appelle PIXEL. Compte ses lettres.", "Aligne le A extérieur sur le F intérieur."],
       solution: "Clé 5 (PIXEL = 5 lettres). XJUY IJZC EJWT SJZK = SEPT DEUX ZERO NEUF. Code 7209.",
       debrief: { fait: "Tu as cassé un chiffrement vieux de 2000 ans.", isen: "En cybersécurité, on apprend pourquoi les chiffrements modernes, eux, ne se cassent pas." }
     },
     {
-      id: "E4", nom: "Le journal binaire", domaine: "Informatique", code: "1306", minutes: 8, reference: true,
+      id: "E4", indice: 1, nom: "Le journal binaire", domaine: "Informatique", code: "1306", minutes: 8, reference: true,
       coups: ["Lis la carte « Comment lire un nombre binaire » : prends le jeu HEURE pour l'heure et le jeu MINUTE pour les minutes, retourne côté points sous chaque 1, et compte les points.", "10111 en heures, ça fait 23. Attention : deux lignes ont cette heure-là, vérifie aussi les minutes."],
       solution: "Ligne 4 : 10111 = 16 + 4 + 2 + 1 = 23 et 101111 = 32 + 8 + 4 + 2 + 1 = 47, donc 23h47. Son code de session : 1306.",
       debrief: { fait: "Tu as lu l'heure en binaire dans la mémoire d'une machine.", isen: "Tout ce que manipule un ordinateur s'écrit en 0 et en 1, de l'heure d'un badge à une photo." }
     },
     {
       // V0 : version papier (plateau quadrillé + pion + programme). Plus tard : Ozobot.
-      id: "E5", nom: "Le parcours de PIXEL", domaine: "Robotique et algorithmique", code: "5831", minutes: 10, reference: false,
+      id: "E5", indice: 3, nom: "Le parcours de PIXEL", domaine: "Robotique et algorithmique", code: "5831", minutes: 10, reference: false,
       coups: ["PIXEL démarre sur la case DÉPART, tourné vers le haut du plateau. TOURNE change seulement sa direction, pas sa case.", "RÉPÈTE 2 FOIS [ … ] : exécute tout le bloc entre crochets, puis exécute-le une deuxième fois."],
       solution: "En exécutant le programme pas à pas, PIXEL attrape les objets des cases 5, 8, 3 puis 1. Code 5831.",
       debrief: { fait: "Tu as exécuté un algorithme pas à pas, exactement comme un robot.", isen: "Programmer un robot, c'est écrire ces instructions : en cours, on les écrit en Python ou en C." }
     },
     {
-      id: "E6", nom: "La pièce de rechange", domaine: "Fabrication 3D", code: "2648", minutes: 8, reference: false,
+      id: "E6", indice: 2, nom: "La pièce de rechange", domaine: "Fabrication 3D", code: "2648", minutes: 8, reference: false,
       coups: ["Ce n'est pas la forme qui compte, c'est ce qu'il y a dedans.", "Regarde la pièce à travers la lumière."],
       solution: "Les 4 morceaux assemblés devant la lampe révèlent le code 2648.",
       debrief: { fait: "Tu as lu une image cachée dans l'épaisseur du plastique.", isen: "L'impression 3D sert à prototyper vite : cette pièce a été conçue et imprimée au Fablab." }
     },
     {
-      id: "E7", nom: "Le message invisible", domaine: "Optique et embarqué", code: "9174", minutes: 8, reference: false,
+      id: "E7", indice: 3, nom: "Le message invisible", domaine: "Optique et embarqué", code: "9174", minutes: 8, reference: false,
       coups: ["Certaines encres ne se voient qu'à une certaine lumière.", "Un clignotement long, c'est un trait. Une pause longue sépare les chiffres."],
       solution: "Morse : −−−−. / .−−−− / −−... / ....− = 9 1 7 4. Code 9174.",
       debrief: { fait: "Tu as décodé le signal d'un système embarqué.", isen: "La micro:bit est un vrai système embarqué : même principe qu'un capteur industriel." }
     },
     {
-      id: "E8", nom: "Le vrai du faux", domaine: "Intelligence artificielle", code: "3390", minutes: 10, reference: false,
+      id: "E8", indice: 4, nom: "Le vrai du faux", domaine: "Intelligence artificielle", code: "3390", minutes: 10, reference: false,
       coups: ["Ne regarde pas l'image, regarde ses infos : appareil, nom du fichier, taille, lieu, heure. Deux incohérences ou plus = une fausse.", "La photo du restaurant à 23h45 est fausse : son GPS dit Toulon et sa taille est un carré parfait. Il en reste 3 à trouver."],
       solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot en plein soleil (0). Code 3390.",
       debrief: { fait: "Tu as démasqué des images IA parfaitement réalistes en enquêtant sur leurs infos.", isen: "On ne croit plus une image, on vérifie sa provenance : c'est le travail des ingénieurs en cybersécurité et en investigation numérique." }
     },
     // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Même code que E2 : n'en activer qu'une des deux.
     {
-      id: "E9", nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: false,
+      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: false,
       coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
       solution: "Les 4 circuits fermés affichent 3, 8, 5, 6 de gauche à droite. Code 3856.",
       debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
