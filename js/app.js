@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.0.0";
+  const VERSION_APP = "v1.1.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -292,8 +292,7 @@
         <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.<br><span style="font-size:14px;opacity:.8">Version ${VERSION_APP}</span></p></section>
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
-        <div class="grille g2">
-          <button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme E2</span><strong>Station circuit</strong><span>Avec le Makey Makey branché en USB.</span></button>
+        <div class="grille">
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
@@ -584,14 +583,14 @@
   let stationTest = {};             // cases allumées au doigt (mode test)
   let stationAlarmeT = null;
   function vueStation() {
-    const e2 = enigme("E2");
+    const e2 = enigme("E9");
     const cases = S.stationCircuit.map(p => {
       const on = stationFerme[p.touche] || stationTest[p.touche];
       return `<button class="porte-case ${on ? "on" : ""}" data-a="stationTest" data-touche="${p.touche}" data-porte="${p.touche}">
         <span class="porte-nom">${esc(p.porte)}</span><span class="porte-chiffre">${on ? esc(p.chiffre) : "?"}</span>
         <span class="porte-etat">${on ? "circuit fermé" : "circuit ouvert"}</span></button>`;
     }).join("");
-    return `<header class="topbar" style="border-color:rgba(255,252,247,.15)"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Station E2</span><span class="titre" style="color:#fff">${esc(e2 ? e2.nom : "Station circuit")}</span></div><div class="spacer"></div>
+    return `<header class="topbar" style="border-color:rgba(255,252,247,.15)"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Station E9</span><span class="titre" style="color:#fff">${esc(e2 ? e2.nom : "Station circuit")}</span></div><div class="spacer"></div>
       <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="quitterStation">Quitter</button><button class="icon-btn" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="pleinecran" aria-label="Plein écran">⤢</button></header>
       <main class="station"><p style="font-size:22px;max-width:900px">Relie chaque porte à la bande MASSE avec un trait de crayon bien épais, sans toucher les zones rouges. Quand un circuit est fermé, le chiffre de sa porte s'affiche.</p>
       <div class="portes-cases">${cases}</div>

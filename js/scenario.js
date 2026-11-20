@@ -69,10 +69,10 @@ window.SCENARIO = {
       debrief: { fait: "Tu as lu la valeur d'un composant électronique.", isen: "C'est le premier geste de l'électronique, qu'on pratique dès le cycle préparatoire." }
     },
     {
-      id: "E2", nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: true,
-      coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
-      solution: "Les 4 circuits fermés affichent 3, 8, 5, 6 de gauche à droite. Code 3856.",
-      debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
+      id: "E2", nom: "La machine à prédire", domaine: "Intelligence artificielle", code: "3856", minutes: 8, reference: true,
+      coups: ["Comparez bien les pourcentages : c'est souvent serré, et PIXEL-IA prend toujours le plus haut. Arrêtez-vous au mot FIN.", "La phrase commence par : LE CODE DU SERVEUR EST…"],
+      solution: "LE CODE DU SERVEUR EST TROIS HUIT CINQ SIX FIN. Code 3856.",
+      debrief: { fait: "Tu as fait parler une IA mot par mot, exactement comme ChatGPT.", isen: "Une IA générative ne comprend pas ce qu'elle écrit : elle prédit le mot le plus probable. Si un mauvais mot passe devant, elle continue avec aplomb : c'est une hallucination. À l'ISEN, on apprend à construire ces modèles et à vérifier ce qu'ils disent." }
     },
     {
       id: "E3", nom: "Le disque de César", domaine: "Cybersécurité", code: "7209", minutes: 8, reference: true,
@@ -110,10 +110,17 @@ window.SCENARIO = {
       coups: ["Ne regarde pas l'image, regarde ses infos : appareil, nom du fichier, taille, lieu, heure. Deux incohérences ou plus = une fausse.", "La photo du restaurant à 23h45 est fausse : son GPS dit Toulon et sa taille est un carré parfait. Il en reste 3 à trouver."],
       solution: "Les 4 fausses, dans l'ordre des heures : 19h12 soudure (3), 21h40 affiche (3), 23h45 restaurant (9), 23h58 robot en plein soleil (0). Code 3390.",
       debrief: { fait: "Tu as démasqué des images IA parfaitement réalistes en enquêtant sur leurs infos.", isen: "On ne croit plus une image, on vérifie sa provenance : c'est le travail des ingénieurs en cybersécurité et en investigation numérique." }
+    },
+    // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Même code que E2 : n'en activer qu'une des deux.
+    {
+      id: "E9", nom: "Le circuit au crayon", domaine: "Électronique", code: "3856", minutes: 10, reference: false,
+      coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
+      solution: "Les 4 circuits fermés affichent 3, 8, 5, 6 de gauche à droite. Code 3856.",
+      debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
     }
   ],
 
-  // Énigme E2 : touches envoyées par le Makey Makey → chiffre affiché par la station
+  // Énigme E9 (Makey Makey) : touches envoyées par le Makey Makey → chiffre affiché par la station
   stationCircuit: [
     { touche: "ArrowUp", porte: "Porte Haut", chiffre: "3" },
     { touche: "ArrowDown", porte: "Porte Bas", chiffre: "8" },
@@ -130,5 +137,5 @@ window.SCENARIO = {
     { id: "S", nom: "Numéro de série" }
   ],
 
-  messageFinal: "Tu viens de faire de l'électronique, de la cybersécurité et de la robotique en une heure. C'est ça, être ingénieur du numérique."
+  messageFinal: "Tu viens de faire de l'électronique, de l'intelligence artificielle, de la cybersécurité et de l'informatique en une heure. C'est ça, être ingénieur du numérique."
 };
