@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.6.0";
+  const VERSION_APP = "v1.6.2";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -136,7 +136,7 @@
     const p = P(), el = $("#annonce");
     if (!el) return;
     const lignes = p.equipes.map((eq, i) => { const e = stationDe(i, t); const c = couleur(eq.couleur); return `<div class="an-l"><span class="an-p" style="background:${c.hex}"></span><strong>${esc(eq.nom)}</strong><span>→ ${e ? `<strong>${e.id}</strong> · ${esc(e.nom)}` : "pause dossier"}</span></div>`; }).join("");
-    el.innerHTML = `<div class="an-boite" data-a="fermerAnnonce"><div class="an-t">On tourne !</div><div class="an-s">Tour ${t} · passez à la station suivante</div>${lignes}<div class="an-f">Touchez pour fermer</div></div>`;
+    el.innerHTML = `<div class="an-boite" data-a="fermerAnnonce"><div class="an-t">On tourne !</div><div class="an-s">Tour ${t} · passez à la station suivante</div><div class="an-lignes">${lignes}</div><div class="an-f">Touchez pour fermer</div></div>`;
     el.classList.remove("cache");
     clearTimeout(annonceT); annonceT = setTimeout(() => el.classList.add("cache"), 12000);
   }
@@ -718,7 +718,7 @@
     return {
       lettres, chiffres,
       fils: melange(Object.keys(FILS)), debranche: null,
-      bouton: Object.keys(BOUTONS)[alea(4)],
+      bouton: alea(2) === 0 ? "blanc" : ["bleu", "rouge", "vert"][alea(3)],   // le blanc (le plus subtil) sort 1 fois sur 2
       sequence: [SIMON[alea(4)], SIMON[alea(4)], SIMON[alea(4)]], prog: 0,
       ok: { A: false, B: false, C: false, D: false },
       code: "", erreurs: 0, chrono: { debut: null, pauseDebut: null, pauseCumul: 0 }, ouvertA: null
