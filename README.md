@@ -1,13 +1,13 @@
-# ARGO · Game master (V0)
+# PIXEL · Game master (V0)
 
-Application du maître du jeu pour **Le Prototype disparu**, l'animation escape game du Fablab ISEN Méditerranée.
+Application du maître du jeu pour **L'affaire PIXEL**, l'animation escape game du Fablab ISEN Méditerranée.
 C'est une webapp statique (HTML, CSS, JS, sans dépendance ni serveur). Elle fonctionne hors ligne une fois installée sur la tablette.
 
 ## Mise en ligne sur GitHub Pages
 
-1. Créer un dépôt (par exemple `argo-game-master`) et y déposer **le contenu de ce dossier** à la racine.
+1. Créer un dépôt (par exemple `pixel-game-master`) et y déposer **le contenu de ce dossier** à la racine.
 2. Dans le dépôt : Settings → Pages → Source : « Deploy from a branch », branche `main`, dossier `/ (root)`.
-3. L'app est en ligne après une minute sur `https://<compte>.github.io/argo-game-master/`.
+3. L'app est en ligne après une minute sur `https://<compte>.github.io/pixel-game-master/`.
 
 ## Installation sur les tablettes Android
 

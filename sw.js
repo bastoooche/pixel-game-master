@@ -1,11 +1,11 @@
-/* ARGO · Game master — service worker : tout est mis en cache pour jouer hors ligne.
+/* PIXEL · Game master — service worker : tout est mis en cache pour jouer hors ligne.
    Après chaque modification des fichiers, augmenter VERSION pour que les tablettes se mettent à jour. */
-const VERSION = "argo-v0.2.6";
+const VERSION = "pixel-v1.0.0";
 const FICHIERS = [
   "./", "index.html", "manifest.webmanifest", "css/app.css",
   "js/app.js", "js/scenario.js", "js/qrcode.js",
   "fonts/PlusJakartaSans-400.woff2", "fonts/PlusJakartaSans-600.woff2", "fonts/PlusJakartaSans-700.woff2", "fonts/PlusJakartaSans-800.woff2",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"
+  "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png", "img/pixel.png"
 ];
 
 self.addEventListener("install", e => {

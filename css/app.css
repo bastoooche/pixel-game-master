@@ -1,4 +1,4 @@
-/* ARGO · Game master — styles (Design System ISEN Méditerranée : crème, rouge, bleu, blocs très arrondis) */
+/* PIXEL · Game master — styles (Design System ISEN Méditerranée : crème, rouge, bleu, blocs très arrondis) */
 
 @font-face { font-family: "Plus Jakarta Sans"; src: url("../fonts/PlusJakartaSans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Plus Jakarta Sans"; src: url("../fonts/PlusJakartaSans-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
@@ -214,3 +214,12 @@ table.rotation td, table.rotation th { font-size: 16px; }
 .an-l strong:first-of-type { min-width: 170px; }
 .an-p { width: 22px; height: 22px; border-radius: 50%; flex: none; }
 .an-f { font-size: 14px; opacity: .8; text-align: right; }
+
+/* ---------- Mascotte PIXEL ---------- */
+.hero-pixel { position: relative; overflow: hidden; }
+.hero-pixel .mascotte { position: absolute; right: 28px; top: 28px; width: 190px; padding: 18px; background: var(--creme); border-radius: 50%; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.hero-pixel h1, .hero-pixel > .etiquette, .hero-pixel > p:nth-of-type(1) { margin-right: 210px; }
+.mission-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.mascotte-mini { width: 120px; flex: none; padding: 10px; background: var(--creme); border-radius: 50%; }
+.mascotte-ouvert { width: 220px; margin: 8px auto 0; padding: 18px; background: var(--creme); border-radius: 50%; display: block; }
+@media (max-width: 900px) { .hero-pixel .mascotte { width: 140px; } .hero-pixel h1, .hero-pixel > .etiquette, .hero-pixel > p:nth-of-type(1) { margin-right: 130px; } }

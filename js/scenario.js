@@ -1,5 +1,5 @@
 /*
- * ARGO · Game master — fichier de scénario (« cartouche »)
+ * PIXEL · Game master — fichier de scénario (« cartouche »)
  * ---------------------------------------------------------
  * Tout le contenu narratif du jeu est ici. Pour créer une nouvelle enquête,
  * copier ce fichier, réécrire les textes, garder la même structure.
@@ -7,19 +7,19 @@
  * (ils sont alors enregistrés sur la tablette et remplacent ceux d'ici).
  */
 window.SCENARIO = {
-  id: "prototype-disparu",
+  id: "affaire-pixel",
   version: 1,
-  titre: "Le Prototype disparu",
-  accroche: "ARGO a disparu cette nuit. Retrouve-le avant le concours.",
+  titre: "L'affaire PIXEL",
+  accroche: "PIXEL, le robot-poulpe du Fablab, a disparu cette nuit. Retrouve-le avant la Coupe de robotique.",
 
   // Durées par défaut, en minutes (modifiables dans les Réglages)
   dureeEnquete: 45,
   dureeFinale: 10,
 
   pitch: [
-    "Demain matin, le Fablab de l'ISEN présente ARGO à un concours de robotique. ARGO, c'est un petit robot sous-marin conçu par les élèves pour explorer les herbiers de la rade.",
+    "Demain matin, l'ISEN inscrit PIXEL à la Coupe de France de robotique. PIXEL, c'est la mascotte du Fablab : un robot-poulpe imprimé en 3D par les élèves, dont les bras multiples attrapent plusieurs objets à la fois. Aucun robot concurrent ne sait faire ça.",
     "Sauf que ce matin, son support est vide. La porte du Fablab a été ouverte cette nuit, et le système de sécurité du labo s'est verrouillé tout seul.",
-    "Vous êtes la cellule d'enquête. Résolvez les énigmes laissées dans le labo, démasquez le coupable et désactivez le système de sécurité. Lui seul sait où se trouve ARGO."
+    "Vous êtes la cellule d'enquête. Résolvez les énigmes laissées dans le labo, démasquez le coupable et désactivez le système de sécurité. Lui seul sait où se trouve PIXEL."
   ],
 
   regles: [
@@ -30,10 +30,10 @@ window.SCENARIO = {
   ],
 
   suspects: [
-    { n: 1, nom: "Lina Morel", role: "Enseignante-chercheuse en IA", mobile: "Voulait réutiliser la vision d'ARGO pour son propre projet" },
-    { n: 2, nom: "Max Ferrand", role: "Élève-ingénieur en 4e année, option cyber", mobile: "Écarté de l'équipe du concours le mois dernier" },
+    { n: 1, nom: "Lina Morel", role: "Enseignante-chercheuse en IA", mobile: "Voulait réutiliser les bras de PIXEL pour son projet de recherche" },
+    { n: 2, nom: "Max Ferrand", role: "Élève-ingénieur en 4e année, option cyber", mobile: "Écarté de l'équipe de la Coupe le mois dernier" },
     { n: 3, nom: "Inès Daoud", role: "Technicienne du Fablab", mobile: "Seule à avoir le badge d'accès de nuit" },
-    { n: 4, nom: "Hugo Lemaire", role: "Fondateur d'une start-up partenaire", mobile: "Prépare un robot concurrent pour le même concours" }
+    { n: 4, nom: "Hugo Lemaire", role: "Fondateur d'une start-up partenaire", mobile: "Prépare un robot concurrent pour la même Coupe de robotique" }
   ],
 
   methodes: [
@@ -58,7 +58,7 @@ window.SCENARIO = {
     explication: "Hugo Lemaire a copié le badge d'Inès avec un lecteur NFC pendant une visite du Fablab, puis s'est fabriqué un faux alibi avec une image générée par IA. Un badge sans contact se copie, et une photo ne prouve plus rien : c'est tout le métier d'ingénieur en cybersécurité."
   },
 
-  cachette: "ARGO est caché dans l'armoire à filaments du Fablab, étagère 3.",
+  cachette: "PIXEL est caché dans l'armoire à filaments du Fablab, étagère 3.",
 
   // Banque d'énigmes. "reference: true" = sélection par défaut pour 1h30.
   enigmes: [
@@ -76,8 +76,8 @@ window.SCENARIO = {
     },
     {
       id: "E3", nom: "Le disque de César", domaine: "Cybersécurité", code: "7209", minutes: 8, reference: true,
-      coups: ["Le robot s'appelle ARGO.", "Aligne le A extérieur sur le E intérieur."],
-      solution: "Clé 4 (ARGO = 4 lettres). WITX HIYB DIVS RIYJ = SEPT DEUX ZERO NEUF. Code 7209.",
+      coups: ["La mascotte s'appelle PIXEL. Compte ses lettres.", "Aligne le A extérieur sur le F intérieur."],
+      solution: "Clé 5 (PIXEL = 5 lettres). XJUY IJZC EJWT SJZK = SEPT DEUX ZERO NEUF. Code 7209.",
       debrief: { fait: "Tu as cassé un chiffrement vieux de 2000 ans.", isen: "En cybersécurité, on apprend pourquoi les chiffrements modernes, eux, ne se cassent pas." }
     },
     {
@@ -88,9 +88,9 @@ window.SCENARIO = {
     },
     {
       // V0 : version papier (plateau quadrillé + pion + programme). Plus tard : Ozobot.
-      id: "E5", nom: "Le parcours d'ARGO", domaine: "Robotique et algorithmique", code: "5831", minutes: 10, reference: false,
-      coups: ["ARGO démarre sur la case DÉPART, tourné vers le haut du plateau. TOURNE change seulement sa direction, pas sa case.", "RÉPÈTE 2 FOIS [ … ] : exécute tout le bloc entre crochets, puis exécute-le une deuxième fois."],
-      solution: "En exécutant le programme pas à pas, ARGO scanne les cases 5, 8, 3 puis 1. Code 5831.",
+      id: "E5", nom: "Le parcours de PIXEL", domaine: "Robotique et algorithmique", code: "5831", minutes: 10, reference: false,
+      coups: ["PIXEL démarre sur la case DÉPART, tourné vers le haut du plateau. TOURNE change seulement sa direction, pas sa case.", "RÉPÈTE 2 FOIS [ … ] : exécute tout le bloc entre crochets, puis exécute-le une deuxième fois."],
+      solution: "En exécutant le programme pas à pas, PIXEL attrape les objets des cases 5, 8, 3 puis 1. Code 5831.",
       debrief: { fait: "Tu as exécuté un algorithme pas à pas, exactement comme un robot.", isen: "Programmer un robot, c'est écrire ces instructions : en cours, on les écrit en Python ou en C." }
     },
     {

@@ -1,7 +1,7 @@
 {
-  "name": "ARGO · Game master",
-  "short_name": "ARGO",
-  "description": "Le Prototype disparu : application du maître du jeu de l'animation Fablab ISEN Méditerranée.",
+  "name": "PIXEL · Game master",
+  "short_name": "PIXEL",
+  "description": "L'affaire PIXEL : application du maître du jeu de l'animation Fablab ISEN Méditerranée.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

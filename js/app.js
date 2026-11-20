@@ -1,10 +1,10 @@
-/* ARGO · Game master — application (vanilla JS, hors ligne, sans dépendance) */
+/* PIXEL · Game master — application (vanilla JS, hors ligne, sans dépendance) */
 (() => {
   "use strict";
   const S = window.SCENARIO;
-  const LS_KEY = "argo-gm:" + S.id;
-  const LS_BOITIER = "argo-gm:boitier:" + S.id;
-  const VERSION_APP = "v0.2.6";
+  const LS_KEY = "pixel-gm:" + S.id;
+  const LS_BOITIER = "pixel-gm:boitier:" + S.id;
+  const VERSION_APP = "v1.0.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -287,14 +287,14 @@
     const p = P();
     const reprise = p ? `<button class="tuile-menu" data-a="aller" data-v="jeu"><span class="etiquette">Partie en cours</span><strong>Reprendre la partie</strong><span>${p.equipes.length} équipes · phase : ${esc(libellePhase(p.phase))}</span></button>` : "";
     return barre() + `<main class="page"><div class="accueil-hero">
-      <section class="panneau rouge pile"><span class="etiquette" style="color:#fff">Jeu d'enquête · 1h30 · 2 à 6 équipes</span>
+      <section class="panneau rouge pile hero-pixel"><img class="mascotte" src="img/pixel.png" alt="PIXEL, la mascotte du Fablab"><span class="etiquette" style="color:#fff">Jeu d'enquête · 1h30 · 2 à 6 équipes</span>
         <h1>${esc(S.titre)}</h1><p style="font-size:22px">${esc(S.accroche)}</p>
         <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.<br><span style="font-size:14px;opacity:.8">Version ${VERSION_APP}</span></p></section>
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
         <div class="grille g2">
           <button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme E2</span><strong>Station circuit</strong><span>Avec le Makey Makey branché en USB.</span></button>
-          <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système ARGO-LOCK, en attendant le vrai.</span></button>
+          <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
       </section></div></main>`;
@@ -332,7 +332,7 @@
             <div class="champ"><label>Page du manuel après (énigmes)</label><input type="number" min="1" max="8" value="${r.seuilManuel}" data-set="num" data-k="seuilManuel"></div>
             <div class="champ"><label>Rotation des stations (minutes, 0 = circulation libre)</label><input type="number" min="0" max="30" value="${r.rotationMin}" data-set="num" data-k="rotationMin"></div>
           </div>
-          <div class="champ"><label>Cachette d'ARGO (affichée à l'ouverture du boîtier et à la révélation)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(r.cachette)}" data-set="txt" data-k="cachette"></div>
+          <div class="champ"><label>Cachette de PIXEL (affichée à l'ouverture du boîtier et à la révélation)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(r.cachette)}" data-set="txt" data-k="cachette"></div>
           <div class="champ"><label>Lien du QR code de fin (formulaire, inscription JPO…)</label><input type="url" placeholder="https://…" value="${esc(r.lienFin)}" data-set="txt" data-k="lienFin"></div>
           <div class="champ"><label>Code animateur (vide = pas de code)</label><input type="text" inputmode="numeric" maxlength="8" value="${esc(r.pin)}" data-set="txt" data-k="pin"></div>
         </section>
@@ -364,7 +364,7 @@
   function vueBrief() {
     return barre(`<span class="phase-pill">Briefing</span><button class="btn contour petit" data-a="animateur">Animateur</button>`) + `<main class="page pile">
       <div class="grille g2">
-        <section class="panneau pile" style="background:var(--rouge);color:#fff"><span class="etiquette" style="color:#fff">Mission</span><h1 style="color:#fff">${esc(S.titre)}</h1>${S.pitch.map(t => `<p style="font-size:20px">${esc(t)}</p>`).join("")}</section>
+        <section class="panneau pile" style="background:var(--rouge);color:#fff"><div class="mission-tete"><div><span class="etiquette" style="color:#fff">Mission</span><h1 style="color:#fff">${esc(S.titre)}</h1></div><img class="mascotte-mini" src="img/pixel.png" alt="PIXEL"></div>${S.pitch.map(t => `<p style="font-size:20px">${esc(t)}</p>`).join("")}</section>
         <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${S.regles.map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
           <p class="douce">${actives().length} stations · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.</p></section>
       </div>
@@ -407,7 +407,7 @@
     const p = P();
     const manquantes = p.equipes.filter(eq => eq.fiches.length && !eq.ficheRemise);
     return barre(`<span class="phase-pill">Accusation</span><button class="btn contour petit" data-a="dossierGeneral">Suspects</button><button class="btn contour petit" data-a="animateur">Animateur</button>`) +
-      `<main class="page pile"><section class="panneau"><h2>Qui a pris ARGO, et comment ?</h2><p style="font-size:19px;margin:0">Chaque équipe désigne en secret un suspect et une méthode. Bon coupable : +${PTS.coupable} points. Bonne méthode : +${PTS.methode} points. Les réponses restent cachées jusqu'à la révélation.</p></section>
+      `<main class="page pile"><section class="panneau"><h2>Qui a pris PIXEL, et comment ?</h2><p style="font-size:19px;margin:0">Chaque équipe désigne en secret un suspect et une méthode. Bon coupable : +${PTS.coupable} points. Bonne méthode : +${PTS.methode} points. Les réponses restent cachées jusqu'à la révélation.</p></section>
        <div class="equipes">${p.equipes.map((eq, i) => tuileEquipe(eq, i, "accusation")).join("")}</div>
        ${manquantes.length ? `<section class="panneau pile"><h3>Avant la finale, remettre les pages du manuel</h3>${manquantes.map(eq => `<div class="ligne"><span class="couleur-pastille" style="background:${couleur(eq.couleur).hex}"></span><span style="flex:1">${esc(eq.nom)} : ${esc(nomsFiches(eq.fiches))}</span><button class="btn petit bleu" data-a="ficheRemise" data-i="${p.equipes.indexOf(eq)}">Fiche remise</button></div>`).join("")}</section>` : ""}
        <div class="ligne"><button class="btn grand" data-a="versFinale">Passer à la finale</button></div></main>`;
@@ -419,7 +419,7 @@
     const repart = p.equipes.map(eq => `<div class="ligne"><span class="couleur-pastille" style="background:${couleur(eq.couleur).hex}"></span><strong style="flex:1">${esc(eq.nom)}</strong><span>${esc(nomsFiches(eq.fiches) || "aide les autres équipes")}</span></div>`).join("");
     return barre(`<span class="phase-pill">Finale</span><button class="btn contour petit" data-a="animateur">Animateur</button>`) +
       `<main class="page pile"><div class="grille g2">
-        <section class="panneau nuit pile centre" style="justify-content:center"><span class="etiquette" style="color:var(--creme)">Système de sécurité ARGO-LOCK</span>
+        <section class="panneau nuit pile centre" style="justify-content:center"><span class="etiquette" style="color:var(--creme)">Système de sécurité PIXEL-LOCK</span>
           <div class="chrono" id="chrono" style="font-size:120px;color:#fff">--:--</div>
           <p>Erreurs : <strong>${f.penalites}</strong> (−30 s chacune)</p>
           <div class="ligne" style="justify-content:center">
@@ -438,7 +438,7 @@
     const temps = p.finale.ouvertA && p.finale.debut ? fmt(p.finale.ouvertA - p.finale.debut - p.finale.pauseCumul + p.finale.penalites * PENALITE_FINALE_MS) : null;
     let corps = "";
     if (et === 0) {
-      corps = `<section class="panneau pile centre" style="background:var(--rouge);color:#fff;padding:64px"><span class="etiquette" style="color:#fff">Système déverrouillé${temps ? " en " + temps : ""}</span><h1 style="color:#fff;font-size:56px">${esc(cachette())}</h1><p style="font-size:22px">Allez chercher ARGO !</p></section>`;
+      corps = `<section class="panneau pile centre" style="background:var(--rouge);color:#fff;padding:64px"><span class="etiquette" style="color:#fff">Système déverrouillé${temps ? " en " + temps : ""}</span><h1 style="color:#fff;font-size:56px">${esc(cachette())}</h1><img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL"><p style="font-size:22px">Allez chercher PIXEL !</p></section>`;
     } else if (et === 1) {
       const res = p.equipes.map(eq => {
         const a = eq.accusation; const s = a && S.suspects.find(x => x.n === a.suspect); const m = a && S.methodes.find(x => x.id === a.methode);
@@ -613,7 +613,7 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Boîtier virtuel ARGO-LOCK                                           */
+  /* Boîtier virtuel PIXEL-LOCK                                           */
   /* ------------------------------------------------------------------ */
   const FILS = { rouge: "#E30613", bleu: "#2f6fd6", vert: "#6AB87E", jaune: "#F5C400" };
   const BOUTONS = { bleu: "#2f6fd6", rouge: "#E30613", vert: "#6AB87E", blanc: "#F4F1EA" };
@@ -676,7 +676,7 @@
     if (B.ouvertA) {
       const t = fmt(B.ouvertA - B.chrono.debut - B.chrono.pauseCumul + B.erreurs * PENALITE_FINALE_MS);
       return `<main class="ouvert"><div class="panneau pile centre" style="background:var(--vert);color:var(--encre);max-width:900px;padding:56px">
-        <span class="etiquette" style="color:var(--encre)">ARGO-LOCK · système déverrouillé en ${t}</span><h1 style="color:var(--encre);font-size:56px">${esc(cachette())}</h1>
+        <span class="etiquette" style="color:var(--encre)">PIXEL-LOCK · système déverrouillé en ${t}</span><h1 style="color:var(--encre);font-size:56px">${esc(cachette())}</h1>
         <p style="font-size:20px">${pl(B.erreurs, "erreur")}. Bravo à toutes les équipes.</p>
         <div class="ligne" style="justify-content:center"><button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div></div></main>`;
     }
@@ -684,7 +684,7 @@
     const simon = SIMON.map(c => `<button data-a="simon" data-c="${c}" data-simon="${c}" style="background:${FILS[c]};color:${FILS[c]}" ${B.ok.C ? "disabled" : ""}><span style="color:rgba(0,0,0,.55)">${c.toUpperCase()}</span></button>`).join("");
     const progC = sequenceAttendue().map((_, k) => `<span class="puce ${k < B.prog || B.ok.C ? "pleine" : ""}"></span>`).join("");
     const dFerme = !(B.ok.A && B.ok.B && B.ok.C);
-    return `<div class="boitier-entete"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Système de sécurité</span><span class="titre" style="color:#fff">ARGO-LOCK</span></div>
+    return `<div class="boitier-entete"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Système de sécurité</span><span class="titre" style="color:#fff">PIXEL-LOCK</span></div>
         <div><div class="etiquette" style="color:rgba(255,252,247,.7)">N° de série</div><div class="afficheur">${B.lettres} ${B.chiffres}</div></div>
         <div><div class="etiquette" style="color:rgba(255,252,247,.7)">Temps restant</div><div class="chrono" id="chrono" style="color:#fff;font-size:44px">--:--</div></div>
         <div><div class="etiquette" style="color:rgba(255,252,247,.7)">Erreurs</div><div class="chrono" id="bErreurs" style="color:#fff;font-size:44px">${B.erreurs}</div></div>
@@ -758,7 +758,7 @@
           <div><strong>Module B :</strong> ${{ bref: "un appui bref", long: "maintenir jusqu'à la jauge pleine (2 s)", double: "deux appuis brefs" }[boutonAttendu()]} (bouton ${B.bouton})</div>
           <div><strong>Module C :</strong> ${sequenceAttendue().join(", ")} (séquence ${B.sequence.join(", ")}, ${voyelle() ? "avec" : "sans"} voyelle)</div>
           <div><strong>Module D :</strong> ${codeAttendu()}</div></div>
-          <div class="champ mt"><label>Cachette d'ARGO affichée à l'ouverture (vide = texte par défaut)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(R().cachette)}" data-set="txt" data-k="cachette"></div>
+          <div class="champ mt"><label>Cachette de PIXEL affichée à l'ouverture (vide = texte par défaut)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(R().cachette)}" data-set="txt" data-k="cachette"></div>
           <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>`;
       }
     };
@@ -956,5 +956,5 @@
       document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update(); });
     }).catch(() => {}));
   }
-  window.__argo = { store, actions, get B() { return B; }, filAttendu, boutonAttendu, sequenceAttendue, codeAttendu }; // pour les tests
+  window.__pixel = { store, actions, get B() { return B; }, filAttendu, boutonAttendu, sequenceAttendue, codeAttendu }; // pour les tests
 })();
