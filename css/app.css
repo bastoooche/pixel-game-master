@@ -226,3 +226,13 @@ table.rotation td, table.rotation th { font-size: 16px; }
 
 .rot.tous-finis { background: var(--rouge); color: #fff; animation: pulse 1s ease-in-out infinite alternate; }
 @keyframes pulse { from { opacity: 1; } to { opacity: .75; } }
+
+/* ---------- Énigme ajoutée en cours de partie ---------- */
+.tuile-bonus { background: var(--nuit); border: 3px dashed rgba(255,252,247,.45); min-height: 170px; }
+.tuile-bonus .pastilles { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.pastille-bonus { width: 22px; height: 22px; border-radius: 50%; opacity: .35; border: 2px solid #fff; }
+.pastille-bonus.ok { opacity: 1; }
+.choix-equipe { border: 0; border-radius: var(--r-lg); padding: 26px 18px; font: inherit; font-size: 24px; font-weight: 800; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.choix-equipe.texte-encre { color: var(--encre); }
+.choix-equipe small { font-size: 15px; font-weight: 600; }
+.choix-equipe[disabled] { opacity: .4; pointer-events: none; }

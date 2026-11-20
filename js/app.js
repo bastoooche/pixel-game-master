@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.4.1";
+  const VERSION_APP = "v1.5.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -435,12 +435,36 @@
       <div class="puces">${puces}</div>${fiche}${bas}${verrou}</button>`;
   }
 
+  function tuileBonus(e) {
+    const p = P(), faites = p.equipes.filter(eq => eq.resolues.some(r => r.id === e.id));
+    const pastilles = p.equipes.map(eq => `<span class="pastille-bonus ${eq.resolues.some(r => r.id === e.id) ? "ok" : ""}" style="background:${couleur(eq.couleur).hex}"></span>`).join("");
+    return `<button class="tuile-equipe tuile-bonus" data-a="bonusTuile" data-id="${e.id}">
+      <span class="etiquette" style="color:rgba(255,252,247,.75)">Énigme en plus · ${esc(e.domaine)}</span>
+      <span class="nom">${esc(e.id)} · ${esc(e.nom)}</span>
+      <div class="pastilles">${pastilles}<span style="margin-left:8px">${faites.length} / ${p.equipes.length} équipes</span></div>
+      <div class="cta">Saisir un code</div></button>`;
+  }
+  function fenetreChoixEquipe(e) {
+    return {
+      rendu() {
+        const p = P();
+        const boutons = p.equipes.map((eq, i) => {
+          const c = couleur(eq.couleur), fait = eq.resolues.some(r => r.id === e.id), bloque = eq.verrouJusqua > now();
+          return `<button class="choix-equipe ${c.texte !== "#fff" ? "texte-encre" : ""}" style="background:${c.hex}" data-a="equipe" data-i="${i}" ${fait || bloque ? "disabled" : ""}>${esc(eq.nom)}${fait ? "<small>déjà résolue ✓</small>" : bloque ? "<small>clavier bloqué</small>" : ""}</button>`;
+        }).join("");
+        return `<div class="entete"><h2>${esc(e.id)} · ${esc(e.nom)}</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
+          <p class="centre" style="font-size:20px">Quelle est votre équipe ?</p><div class="grille g2">${boutons}</div>`;
+      }
+    };
+  }
+
   function vueEnquete() {
     const p = P();
     const enPause = !!p.enquete.pauseDebut;
     return barre(`<span class="phase-pill">${enPause ? "En pause" : "Enquête"}</span>${rotation() ? `<button class="rot" id="rot" data-a="tourSuivant">Tour –</button>` : ""}<span class="chrono" id="chrono">--:--</span>
         <button class="btn contour petit" data-a="dossierGeneral">Suspects</button><button class="btn contour petit" data-a="animateur">Animateur</button>`) +
       `<main class="page pile"><div class="equipes">${p.equipes.map((eq, i) => tuileEquipe(eq, i, "enquete")).join("")}</div>
+       ${(p.bonus || []).length ? `<div class="equipes">${p.bonus.map(id => tuileBonus(enigme(id))).join("")}</div>` : ""}
        <p class="douce centre">Touche la couleur de ton équipe pour saisir un code, demander un coup de pouce ou relire ton dossier.</p></main>`;
   }
 
@@ -839,6 +863,7 @@
     lancerEnquete() {
       avecCode(() => { const p = P(); p.phase = "enquete"; p.enquete.debut = now(); p.tourVu = 1; save(); son("fin"); rendre(); if (rotation()) annoncerTour(1); });
     },
+    bonusTuile(d) { const e = enigme(d.id); if (e) ouvrir(fenetreChoixEquipe(e)); },
     equipe(d) {
       const eq = P().equipes[Number(d.i)];
       if (eq.verrouJusqua > now()) { son("err"); return; }
