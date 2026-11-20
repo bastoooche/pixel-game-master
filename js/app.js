@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.1.0";
+  const VERSION_APP = "v1.2.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -98,8 +98,22 @@
     const p = P(), min = Number(R().rotationMin) || 0;
     if (!p || !min || !p.enquete.debut) return null;
     const st = actives(), nb = Math.max(p.equipes.length, st.length), dur = min * 60000, e = ecoule(p.enquete);
-    const tour = Math.floor(e / dur) + 1;
-    return { tour, nb, dur, reste: dur - (e % dur), fini: tour > nb };
+    const e2 = e + (p.avanceMs || 0);          // avance cumulée quand un tour est écourté
+    const tour = Math.floor(e2 / dur) + 1;
+    return { tour, nb, dur, reste: dur - (e2 % dur), fini: tour > nb };
+  }
+  /* Une équipe a fini sa station quand elle a trouvé le code de l'énigme de ce tour (ou qu'elle est en pause dossier) */
+  function stationFinie(i, tour) {
+    const e = stationDe(i, tour), eq = P().equipes[i];
+    return !e || eq.resolues.some(r => r.id === e.id);
+  }
+  const tousFinis = rot => P().equipes.every((eq, i) => stationFinie(i, rot.tour));
+  const DELAI_TOUR_MS = 20000;   // les équipes ont 20 s pour ranger avant de tourner
+  function avancerTour() {
+    const p = P(), rot = rotation();
+    if (!rot || rot.fini) return;
+    p.avanceMs = (p.avanceMs || 0) + rot.reste + 50;
+    p.tousFinisA = null; save(); tic();
   }
   function stationDe(i, tour) {
     const st = actives(), nb = Math.max(P().equipes.length, st.length);
@@ -380,7 +394,7 @@
     let bas = "", verrou = "";
     if (mode === "enquete") {
       const rot = rotation();
-      if (rot && !rot.fini) { const e = stationDe(i, rot.tour); bas += `<span class="badge-station">${e ? "Station " + e.id + " · " + esc(e.nom) : "Pause : relisez votre dossier"}</span>`; }
+      if (rot && !rot.fini) { const e = stationDe(i, rot.tour); bas += `<span class="badge-station">${e ? "Station " + e.id + " · " + esc(e.nom) + (stationFinie(i, rot.tour) ? " ✓ finie" : "") : "Pause : relisez votre dossier"}</span>`; }
       bas += `<div class="cta">Saisir un code</div>`;
       if (eq.verrouJusqua > now()) verrou = `<div class="verrou" data-verrou="${i}"><span>Clavier bloqué</span><span class="gros" data-reste="${i}">${fmt(eq.verrouJusqua - now())}</span><span style="font-size:15px;font-weight:600">Mauvais code : −${PTS.erreur} points</span></div>`;
     } else if (mode === "accusation") {
@@ -396,7 +410,7 @@
   function vueEnquete() {
     const p = P();
     const enPause = !!p.enquete.pauseDebut;
-    return barre(`<span class="phase-pill">${enPause ? "En pause" : "Enquête"}</span>${rotation() ? `<span class="rot" id="rot">Tour –</span>` : ""}<span class="chrono" id="chrono">--:--</span>
+    return barre(`<span class="phase-pill">${enPause ? "En pause" : "Enquête"}</span>${rotation() ? `<button class="rot" id="rot" data-a="tourSuivant">Tour –</button>` : ""}<span class="chrono" id="chrono">--:--</span>
         <button class="btn contour petit" data-a="dossierGeneral">Suspects</button><button class="btn contour petit" data-a="animateur">Animateur</button>`) +
       `<main class="page pile"><div class="equipes">${p.equipes.map((eq, i) => tuileEquipe(eq, i, "enquete")).join("")}</div>
        <p class="douce centre">Touche la couleur de ton équipe pour saisir un code, demander un coup de pouce ou relire ton dossier.</p></main>`;
@@ -560,6 +574,7 @@
           ${enq ? `<div class="ligne"><button class="btn" data-a="pauseEnquete">${enPause ? "Reprendre le chrono" : "Mettre en pause"}</button><button class="btn contour" data-a="bonus" data-d="5">+5 min</button><button class="btn contour" data-a="bonus" data-d="-5">−5 min</button></div>` : ""}
           ${!br ? `<h3 class="mt">Pages du manuel</h3><div class="pile">${fiches}</div>` : ""}
           <h3 class="mt">Phase</h3><div class="ligne">
+            ${enq && rotation() && !rotation().fini ? `<button class="btn" data-a="tourSuivant">Tour suivant maintenant</button>` : ""}
             ${enq ? `<button class="btn bleu" data-a="versAccusation">Fin de l'enquête → accusation</button>` : ""}
             ${p.phase === "accusation" ? `<button class="btn bleu" data-a="versFinale">Passer à la finale</button>` : ""}
             ${p.phase === "finale" ? `<button class="btn bleu" data-a="finaleOuvert">Aller à la révélation</button>` : ""}
@@ -815,6 +830,12 @@
       if (sans) demander(pl(sans, "équipe") + " sans accusation", "Elles ne pourront plus accuser après. Passer quand même à la finale ?", "Passer à la finale", go);
       else go();
     },
+    tourSuivant() {
+      const rot = rotation();
+      if (!rot || rot.fini) return;
+      if (P().tousFinisA) { avancerTour(); return; }
+      avecCode(() => demander("Passer au tour suivant ?", `Le tour ${rot.tour} s'arrête maintenant (il restait ${fmt(rot.reste)}) et chaque équipe passe à la station suivante. Les tours suivants gardent leur durée.`, "Tourner maintenant", avancerTour));
+    },
     finaleDemarrer() { P().finale.debut = now(); save(); son("fin"); rendre(); },
     finalePause() { const f = P().finale; if (f.pauseDebut) reprendre(f); else pause(f); save(); rendre(); },
     finaleErreur() { P().finale.penalites++; save(); son("err"); rendre(); },
@@ -910,7 +931,17 @@
         if (r <= 0 && !p.finSonnee) { p.finSonnee = true; save(); son("alarme"); toast("Temps écoulé ! L'animateur passe à l'accusation."); }
         const rot = rotation(), zr = $("#rot");
         if (rot) {
-          if (zr) zr.textContent = rot.fini ? "Temps libre" : `Tour ${rot.tour}/${rot.nb} · ${fmt(rot.reste)}`;
+          const fin = !rot.fini && r > 0 && !p.enquete.pauseDebut && tousFinis(rot);
+          if (fin && !p.tousFinisA) { p.tousFinisA = now(); save(); son("ok"); toast("Toutes les équipes ont fini leur station : on tourne dans 20 secondes."); }
+          if (!fin && p.tousFinisA) { p.tousFinisA = null; save(); }
+          if (fin && now() - p.tousFinisA >= DELAI_TOUR_MS) { avancerTour(); return; }
+          if (zr) {
+            zr.textContent = rot.fini ? "Temps libre" : fin ? `Tous ont fini · on tourne dans ${Math.ceil((DELAI_TOUR_MS - (now() - p.tousFinisA)) / 1000)} s` : `Tour ${rot.tour}/${rot.nb} · ${fmt(rot.reste)}`;
+            zr.classList.toggle("tous-finis", fin);
+          }
+          if (rot.fini && r > 0 && !p.toutResoluVu && p.equipes.every(eq => eq.resolues.length >= actives().length)) {
+            p.toutResoluVu = true; save(); son("ok"); toast("Toutes les équipes ont résolu toutes les énigmes : vous pouvez passer à l'accusation (menu Animateur).");
+          }
           const vu = p.tourVu || 1;
           if (rot.tour > vu && r > 0) {
             p.tourVu = rot.tour; save(); son("alarme");
