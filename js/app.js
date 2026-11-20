@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.5.0";
+  const VERSION_APP = "v1.6.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -45,7 +45,7 @@
     reglages: Object.assign(reglagesParDefaut(), sauve.reglages || {}),
     partie: sauve.partie || null
   };
-  function save() { ecrire(LS_KEY, store); }
+  function save() { if (!window.__razEnCours) ecrire(LS_KEY, store); }
 
   const R = () => store.reglages;
   const P = () => store.partie;
@@ -206,12 +206,17 @@
   }
 
   let adminJusqua = 0;
-  function avecCode(suite) {
-    if (!R().pin || now() < adminJusqua) { suite(); return; }
+  // Après une remise à zéro : on recharge l'appli sur l'accueil, sans réécrire ce qui vient d'être effacé
+  function recharger(sansSauver) {
+    if (sansSauver) window.__razEnCours = true;
+    location.replace(location.pathname + "#accueil"); location.reload();
+  }
+  function avecCode(suite, toujours) {
+    if (!R().pin || (now() < adminJusqua && !toujours)) { suite(); return; }
     const m = {
       saisie: "", erreur: false,
       rendu() {
-        return `<div class="entete"><h2>Code animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
+        return `<div class="entete"><h2>${toujours ? "Confirmez avec le code animateur" : "Code animateur"}</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
           ${saisieHTML(this.saisie, R().pin.length, this.erreur ? "erreur" : "")}
           ${paveHTML("pin")}`;
       },
@@ -383,6 +388,10 @@
         <table class="liste"><thead><tr><th></th><th>#</th><th>Énigme</th><th>Domaine</th><th>Durée</th><th>Code</th></tr></thead><tbody>${lignes}</tbody></table>
       </section>
       <div class="ligne"><button class="btn grand" data-a="lancerPartie">Lancer une nouvelle partie</button><button class="btn contour" data-a="resetReglages">Revenir aux réglages d'origine</button></div>
+      <section class="panneau pile"><h2 style="margin:0">Remettre l'appli à zéro</h2>
+        <p class="douce" style="margin:0">Pratique après des tests. Double validation : une confirmation, puis le code animateur.</p>
+        <div class="ligne"><button class="btn contour" data-a="razPartie">Effacer la partie et le boîtier</button><button class="btn" data-a="razTout">Tout effacer (réglages compris)</button></div>
+      </section><div class="ligne" style="display:none"></div>
     </main>`;
   }
 
@@ -716,7 +725,7 @@
     };
   }
   let B = lire(LS_BOITIER) || nouveauBoitier();
-  const saveB = () => ecrire(LS_BOITIER, B);
+  const saveB = () => { if (!window.__razEnCours) ecrire(LS_BOITIER, B); };
   const voyelle = () => /[AEIOU]/.test(B.lettres);
   function filAttendu() {
     const f = B.fils, dernier = Number(B.chiffres[2]);
@@ -856,6 +865,14 @@
     reglages() { avecCode(() => aller("reglages")); },
     nouvelle() { avecCode(() => { if (P() && P().phase !== "revelation") demander("Une partie est en cours", "La lancer à nouveau effacera la partie en cours au moment du lancement.", "Continuer vers les réglages", () => aller("reglages")); else aller("reglages"); }); },
     lancerPartie() { if (!verifCodes()) return; nouvellePartie(); },
+    razPartie() {
+      demander("Effacer la partie et le boîtier ?", "La partie en cours (équipes, scores, indices) et l'état du boîtier virtuel sont effacés sur cette tablette. Les réglages (équipes, durées, codes, cachette) sont gardés.", "Continuer", () =>
+        avecCode(() => { store.partie = null; save(); try { localStorage.removeItem("pixel-gm:boitier:" + S.id); } catch (e) {} recharger(); }, true));
+    },
+    razTout() {
+      demander("Tout effacer sur cette tablette ?", "Partie, boîtier et réglages repartent de zéro, comme à la première installation : la cachette et les codes modifiés seront aussi effacés. Le code animateur redevient celui d'origine.", "Continuer", () =>
+        avecCode(() => { try { Object.keys(localStorage).filter(k => k.startsWith("pixel-gm:")).forEach(k => localStorage.removeItem(k)); } catch (e) {} store.partie = null; recharger(true); }, true));
+    },
     resetReglages() { demander("Revenir aux réglages d'origine ?", "Équipes, durées, énigmes cochées et codes reprennent leurs valeurs par défaut.", "Réinitialiser", () => { store.reglages = reglagesParDefaut(); save(); rendre(); }); },
     nbEquipes(d) { R().nbEquipes = Math.max(2, Math.min(6, R().nbEquipes + Number(d.d))); save(); rendre(); },
     animateur() { avecCode(() => ouvrir(fenetreAnimateur())); },
