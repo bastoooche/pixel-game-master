@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.4.0";
+  const VERSION_APP = "v1.4.1";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -333,7 +333,8 @@
         <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.<br><span style="font-size:14px;opacity:.8">Version ${VERSION_APP}</span></p></section>
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
-        <div class="grille">
+        <div class="grille g2">
+          <button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>Station circuit</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
