@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.6.2";
+  const VERSION_APP = "v1.6.3";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -681,10 +681,10 @@
     }).join("");
     return `<header class="topbar" style="border-color:rgba(255,252,247,.15)"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Station E9</span><span class="titre" style="color:#fff">${esc(e2 ? e2.nom : "Station circuit")}</span></div><div class="spacer"></div>
       <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="quitterStation">Quitter</button><button class="icon-btn" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="pleinecran" aria-label="Plein écran">⤢</button></header>
-      <main class="station"><p style="font-size:22px;max-width:900px">Relie chaque porte à la bande MASSE avec un trait de crayon bien épais, sans toucher les zones rouges. Quand un circuit est fermé, le chiffre de sa porte s'affiche.</p>
+      <main class="station"><p style="font-size:22px;max-width:900px">Banc de test : posez les pinces sur votre feuille. Chaque circuit fermé, de sa porte jusqu'à la bande MASSE, affiche son chiffre.</p>
       <div class="portes-cases">${cases}</div>
       <div id="stationAlarme" class="alarme cache">ALARME : ton trait touche une zone interdite !</div>
-      <p style="opacity:.55;font-size:15px;max-width:900px">Animateur : touche une case pour la tester sans Makey Makey. Câblage : portes sur Haut, Bas, Gauche, Droite ; bande MASSE sur Earth ; zones interdites sur Espace.</p></main>`;
+      <p style="opacity:.55;font-size:15px;max-width:900px">Animateur : touche une case pour la tester sans Makey Makey. Câblage : portes HAUT, BAS, GAUCHE, DROITE sur Up, Down, Left, Right ; bande MASSE sur Earth.</p></main>`;
   }
   function stationKey(key, enfonce) {
     if (key === " " || key === "Spacebar") {
