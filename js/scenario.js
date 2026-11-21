@@ -126,7 +126,7 @@ window.SCENARIO = {
     },
     // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Peut s'ajouter en cours de partie en plus de E2.
     {
-      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "6419", minutes: 10, reference: false, pret: true,
+      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "6419", minutes: 10, reference: false, pret: true, veille: true,   // en veille : contact pince/graphite à fiabiliser (encre conductrice)
       coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
       solution: "Les 4 circuits fermés affichent 6, 4, 1, 9 de gauche à droite. Code 6419.",
       debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }

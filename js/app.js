@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.1.2";
+  const VERSION_APP = "v2.1.3";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -356,8 +356,8 @@
         <p style="margin-top:auto;opacity:.9">Application du maître du jeu. Elle fonctionne hors ligne une fois installée sur la tablette.<br><span style="font-size:14px;opacity:.8">Version ${VERSION_APP}</span></p></section>
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
-        <div class="grille g2">
-          <button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>Station circuit</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>
+        <div class="grille ${enigme("E9") && !enigme("E9").veille ? "g2" : ""}">
+          ${enigme("E9") && !enigme("E9").veille ? `<button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>Station circuit</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>` : ""}
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
@@ -378,8 +378,8 @@
         <span class="douce fiche-label">${esc(nomsFiches(fichesPour(i, r.nbEquipes)) || "pas de fiche")}</span></div>`;
     }).join("");
     const lignes = S.enigmes.map(e => `<tr>
-      <td><input type="checkbox" class="coche" data-set="active" data-id="${e.id}" ${r.actives.includes(e.id) ? "checked" : ""} aria-label="Jouer ${esc(e.nom)}"></td>
-      <td><strong>${e.id}</strong></td><td>${esc(e.nom)}</td><td class="douce">${esc(e.domaine)}</td><td>${e.minutes} min</td>
+      <td><input type="checkbox" class="coche" data-set="active" data-id="${e.id}" ${r.actives.includes(e.id) && !e.veille ? "checked" : ""} ${e.veille ? "disabled title=\"En veille\"" : ""} aria-label="Jouer ${esc(e.nom)}"></td>
+      <td><strong>${e.id}</strong></td><td>${esc(e.nom)}${e.veille ? ` <span class="douce">· en veille</span>` : ""}</td><td class="douce">${esc(e.domaine)}</td><td>${e.minutes} min</td>
       <td><input type="text" inputmode="numeric" maxlength="4" value="${esc(codeDe(e))}" data-set="code" data-id="${e.id}" aria-label="Code de ${esc(e.nom)}"></td></tr>`).join("");
     return barre(`<button class="btn contour petit" data-a="aller" data-v="accueil">Accueil</button>`) + `<main class="page pile">
       <h1>Réglages</h1>
@@ -671,7 +671,7 @@
   }
 
   function sectionAjout() {
-    const act = actives(), libres = S.enigmes.filter(e => !act.some(x => x.id === e.id)).sort((x, y) => (y.pret ? 1 : 0) - (x.pret ? 1 : 0));
+    const act = actives(), libres = S.enigmes.filter(e => !e.veille && !act.some(x => x.id === e.id)).sort((x, y) => (y.pret ? 1 : 0) - (x.pret ? 1 : 0));
     if (!libres.length) return "";
     const lignes = libres.map(e => {
       const conflit = act.find(x => codeDe(x) === codeDe(e));
