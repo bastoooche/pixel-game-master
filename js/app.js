@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.0.0";
+  const VERSION_APP = "v2.1.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -33,6 +33,7 @@
       rotationMin: 10,
       penaliteSec: 60,
       niveau: "decouverte",
+      format: "complet",
       lienFin: "",
       cachette: "",
       pin: "2026"
@@ -66,6 +67,10 @@
   const couleur = id => COULEURS.find(c => c.id === id) || COULEURS[0];
   const enigme = id => S.enigmes.find(e => e.id === id);
   const expert = () => R().niveau === "expert";
+  const express = () => R().format === "express";
+  const seuilFiche = () => express() ? 1 : R().seuilManuel;
+  // Express : chaque équipe choisit une énigme ; tout est fini quand chaque équipe a résolu la sienne
+  const tousExpressFinis = () => { const p = P(); return !!p && p.equipes.every(eq => eq.enigme && eq.resolues.some(r => r.id === eq.enigme)); };
   const versionDe = e => (expert() && e.expert) ? e.expert : e;          // contenu de l'énigme au niveau choisi
   const codeBase = e => versionDe(e).code || e.code;
   const codeDe = e => (R().codes[e.id] || codeBase(e));
@@ -76,6 +81,7 @@
   const cachette = () => (R().cachette || "").trim() || S.cachette;
 
   function fichesPour(index, nb) {
+    if (nb === 1) return index === 0 ? (expert() ? ["A", "B", "C", "D", "E"] : ["A", "B", "C", "D"]) : [];
     if (expert()) {
       if (nb <= 2) return [["A", "B", "E"], ["C", "D"]][index] || [];
       if (nb === 3) return [["A", "B"], ["C", "E"], ["D"]][index] || [];
@@ -108,7 +114,7 @@
   /* Rotation des stations : chaque équipe change de station toutes les N minutes */
   function rotation() {
     const p = P(), min = Number(R().rotationMin) || 0;
-    if (!p || !min || !p.enquete.debut) return null;
+    if (!p || !min || !p.enquete.debut || express()) return null;
     const st = stationsBase(), nb = Math.max(p.equipes.length, st.length), dur = min * 60000, e = ecoule(p.enquete);
     const e2 = e + (p.avanceMs || 0);          // avance cumulée quand un tour est écourté
     const tour = Math.floor(e2 / dur) + 1;
@@ -289,7 +295,8 @@
       if (!n || n > N || connus.has(n)) { n = 0; for (let k = 1; k < N; k++) if (!connus.has(k)) { n = k; break; } }
       if (n) connus.add(n);
     }
-    if (stationsBase().every(e => eq.resolues.some(r => r.id === e.id))) for (let k = 1; k <= N; k++) connus.add(k);
+    const toutFini = express() ? tousExpressFinis() : stationsBase().every(e => eq.resolues.some(r => r.id === e.id));
+    if (toutFini) for (let k = 1; k <= N; k++) connus.add(k);
     return connus;
   }
   function saisirCode(iEq, code) {
@@ -304,7 +311,7 @@
     eq.resolues.push({ id: e.id, t: now() }); save(); son("ok");
     const k = eq.resolues.length;
     const nouveaux = [...indicesConnus(eq)].filter(n => !avant.has(n)).sort((x, y) => x - y).map(n => ({ n, ...S.indices[n - 1] }));
-    return { type: "ok", e, indices: nouveaux, rang: k, fiche: k === R().seuilManuel && eq.fiches.length ? eq.fiches : null };
+    return { type: "ok", e, indices: nouveaux, rang: k, fiche: k === seuilFiche() && eq.fiches.length ? eq.fiches : null };
   }
 
   /* ------------------------------------------------------------------ */
@@ -381,9 +388,14 @@
           <button class="carte choix ${r.niveau === "expert" ? "choisi" : ""}" data-a="niveau" data-v="expert"><div class="num">Terminale scientifique, 1re année</div><strong>Expert</strong><div class="douce" style="font-size:15px">Calculs, Vigenère, hexadécimal ; finale de 6 minutes, 3 erreurs maximum et un 5e module (loi d'Ohm). Supports « Expert » à imprimer.</div></button>
         </div>
         <p class="douce" style="margin:0">Le niveau se règle sur chaque tablette : pensez aussi au boîtier (menu Animateur du boîtier).</p></section>
+      <section class="panneau pile"><h2 style="margin:0">Format</h2>
+        <div class="grille g2">
+          <button class="carte choix ${r.format !== "express" ? "choisi" : ""}" data-a="format" data-v="complet"><div class="num">1h30 · 4 à 6 équipes</div><strong>Complet</strong><div class="douce" style="font-size:15px">Toutes les équipes font toutes les énigmes, en rotation. Enquête de 45 minutes.</div></button>
+          <button class="carte choix ${r.format === "express" ? "choisi" : ""}" data-a="format" data-v="express"><div class="num">30 à 40 min · peu de participants</div><strong>Express</strong><div class="douce" style="font-size:15px">Chaque équipe (ou chaque élève) choisit une énigme selon ses goûts. Tout le monde joue en même temps, puis indices en commun, accusation et finale. Enquête de 20 minutes.</div></button>
+        </div></section>
       <div class="grille g2">
         <section class="panneau pile"><h2>Équipes</h2>
-          <div class="stepper"><button class="icon-btn" data-a="nbEquipes" data-d="-1" aria-label="Moins d'équipes">−</button><span class="val">${r.nbEquipes}</span><button class="icon-btn" data-a="nbEquipes" data-d="1" aria-label="Plus d'équipes">+</button><span class="douce">équipes (2 à 6)</span></div>
+          <div class="stepper"><button class="icon-btn" data-a="nbEquipes" data-d="-1" aria-label="Moins d'équipes">−</button><span class="val">${r.nbEquipes}</span><button class="icon-btn" data-a="nbEquipes" data-d="1" aria-label="Plus d'équipes">+</button><span class="douce">${express() ? "équipes (1 par énigme au plus)" : "équipes (2 à 6)"}</span></div>
           ${equipes}
         </section>
         <section class="panneau pile"><h2>Durées et règles</h2>
@@ -427,14 +439,29 @@
     return `<div class="grille" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${S.suspects.map(s => `<div class="carte"><div class="num">Suspect n° ${s.n}</div><h3>${esc(s.nom)}</h3><p class="douce" style="margin:0 0 6px">${esc(s.role)}</p><p style="margin:0;font-size:16px">${esc(s.mobile)}</p></div>`).join("")}</div>`;
   }
 
+  function choixExpressHTML() {
+    const p = P();
+    const lignes = p.equipes.map((eq, i) => {
+      const c = couleur(eq.couleur);
+      const boutons = actives().map(e => {
+        const prise = p.equipes.find((x, j) => j !== i && x.enigme === e.id);
+        return `<button class="carte choix ${eq.enigme === e.id ? "choisi" : ""}" data-a="choixExpress" data-i="${i}" data-id="${e.id}" ${prise ? `style="opacity:.45"` : ""}><div class="num">${esc(e.domaine)}</div><strong>${e.id} · ${esc(e.nom)}</strong>${prise ? `<div class="douce" style="font-size:14px">prise par ${esc(prise.nom)}</div>` : ""}</button>`;
+      }).join("");
+      return `<div class="pile" style="gap:8px"><div class="ligne"><span class="couleur-pastille" style="background:${c.hex}"></span><strong style="font-size:20px">${esc(eq.nom)}</strong></div><div class="grille" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">${boutons}</div></div>`;
+    }).join("");
+    return `<section class="panneau pile"><h2 style="margin:0">Format express : chaque équipe choisit son énigme</h2>
+      <p class="douce" style="margin:0">Selon vos goûts : électronique, intelligence artificielle, cybersécurité ou informatique. Toutes les équipes jouent en même temps ; quand chacune a trouvé son code, vous mettez vos indices en commun pour la finale.</p>${lignes}</section>`;
+  }
+
   function vueBrief() {
     return barre(`<span class="phase-pill">Briefing</span><button class="btn contour petit" data-a="animateur">Animateur</button>`) + `<main class="page pile">
       <div class="grille g2">
         <section class="panneau pile" style="background:var(--rouge);color:#fff"><div class="mission-tete"><div><span class="etiquette" style="color:#fff">Mission</span><h1 style="color:#fff">${esc(S.titre)}</h1></div><img class="mascotte-mini" src="img/pixel.png" alt="PIXEL"></div>${S.pitch.map(t => `<p style="font-size:20px">${esc(t)}</p>`).join("")}</section>
-        <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${S.regles.map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
-          <p class="douce">${actives().length} stations · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.${expert() ? " <strong>Niveau Expert.</strong>" : ""}</p></section>
+        <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${(express() ? ["Chaque équipe joue l'énigme qu'elle a choisie ci-dessous. Toutes les équipes jouent en même temps.", ...S.regles.slice(1)] : S.regles).map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
+          <p class="douce">${express() ? "Format express · " + pl(P().equipes.length, "énigme") + " en parallèle" : actives().length + " stations"} · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.${expert() ? " <strong>Niveau Expert.</strong>" : ""}</p></section>
       </div>
-      ${Number(R().rotationMin) ? `<section class="pile"><h2>Qui commence où ?</h2><p class="douce" style="margin:0">Toutes les ${R().rotationMin} minutes, la tablette sonne « On tourne ! » : chaque équipe passe à la station suivante.</p>${tableauRotation()}</section>` : ""}
+      ${express() ? choixExpressHTML() : ""}
+      ${!express() && Number(R().rotationMin) ? `<section class="pile"><h2>Qui commence où ?</h2><p class="douce" style="margin:0">Toutes les ${R().rotationMin} minutes, la tablette sonne « On tourne ! » : chaque équipe passe à la station suivante.</p>${tableauRotation()}</section>` : ""}
       <section class="pile"><h2>Les suspects</h2>${cartesSuspects()}</section>
       <div class="ligne"><button class="btn grand" data-a="lancerEnquete">Lancer l'enquête · ${R().dureeEnquete}:00</button></div>
     </main>`;
@@ -442,18 +469,19 @@
 
   function tuileEquipe(eq, i, mode) {
     const c = couleur(eq.couleur);
-    const n = actives().length;
-    const puces = actives().map((e, k) => `<span class="puce ${k < eq.resolues.length ? "pleine" : ""}"></span>`).join("");
+    const n = express() ? 1 : actives().length;
+    const puces = Array.from({ length: n }, (_, k) => `<span class="puce ${k < eq.resolues.length ? "pleine" : ""}"></span>`).join("");
     let bas = "", verrou = "";
     if (mode === "enquete") {
       const rot = rotation();
+      if (express() && eq.enigme) { const e = enigme(eq.enigme), fait = eq.resolues.some(r => r.id === e.id); bas += `<span class="badge-station">Énigme ${e.id} · ${esc(e.nom)}${fait ? " ✓ résolue" : ""}</span>`; }
       if (rot && !rot.fini) { const e = stationDe(i, rot.tour); bas += `<span class="badge-station">${e ? "Station " + e.id + " · " + esc(e.nom) + (stationFinie(i, rot.tour) ? " ✓ finie" : "") : "Pause : relisez votre dossier"}</span>`; }
       bas += `<div class="cta">Saisir un code</div>`;
       if (eq.verrouJusqua > now()) verrou = `<div class="verrou" data-verrou="${i}"><span>Clavier bloqué</span><span class="gros" data-reste="${i}">${fmt(eq.verrouJusqua - now())}</span><span style="font-size:15px;font-weight:600">Mauvais code : −${PTS.erreur} points</span></div>`;
     } else if (mode === "accusation") {
       bas = `<div class="cta">${eq.accusation ? "Accusation déposée ✓" : "Déposer l'accusation"}</div>`;
     }
-    const fiche = eq.fiches.length && eq.resolues.length >= R().seuilManuel ? `<span class="badge-fiche">${eq.ficheRemise ? "Fiche " + eq.fiches.join("+") + " remise" : "Fiche " + eq.fiches.join("+") + " à remettre"}</span>` : "";
+    const fiche = eq.fiches.length && eq.resolues.length >= seuilFiche() ? `<span class="badge-fiche">${eq.ficheRemise ? "Fiche " + eq.fiches.join("+") + " remise" : "Fiche " + eq.fiches.join("+") + " à remettre"}</span>` : "";
     return `<button class="tuile-equipe ${c.texte !== "#fff" ? "texte-encre" : ""}" style="background:${c.hex}" data-a="${mode === "accusation" ? "accuser" : "equipe"}" data-i="${i}">
       <span class="nom">${esc(eq.nom)}</span>
       <div class="stats"><span><span class="gros">${eq.resolues.length}</span> / ${n} énigmes</span><span><span class="gros">${scoreEquipe(eq, false)}</span> pts</span></div>
@@ -935,6 +963,13 @@
       demander("Tout effacer sur cette tablette ?", "Partie, boîtier et réglages repartent de zéro, comme à la première installation : la cachette et les codes modifiés seront aussi effacés. Le code animateur redevient celui d'origine.", "Continuer", () =>
         avecCode(() => { try { Object.keys(localStorage).filter(k => k.startsWith("pixel-gm:")).forEach(k => localStorage.removeItem(k)); } catch (e) {} store.partie = null; recharger(true); }, true));
     },
+    format(d) {
+      const r = R(); if (r.format === d.v) return;
+      r.format = d.v; r.dureeEnquete = d.v === "express" ? 20 : S.dureeEnquete;
+      if (d.v === "express" && r.nbEquipes > actives().length) r.nbEquipes = actives().length;
+      save(); rendre();
+      toast(d.v === "express" ? "Format express : une énigme par équipe, 20 minutes d'enquête." : "Format complet : rotation de toutes les énigmes, 45 minutes.");
+    },
     niveau(d) {
       const r = R(); if (r.niveau === d.v) return;
       r.niveau = d.v; r.codes = {}; r.dureeFinale = d.v === "expert" ? 6 : S.dureeFinale;
@@ -943,10 +978,16 @@
     },
     niveauBoitier() { actions.niveau({ v: expert() ? "decouverte" : "expert" }); fermer(); },
     resetReglages() { demander("Revenir aux réglages d'origine ?", "Équipes, durées, énigmes cochées et codes reprennent leurs valeurs par défaut.", "Réinitialiser", () => { store.reglages = reglagesParDefaut(); save(); rendre(); }); },
-    nbEquipes(d) { R().nbEquipes = Math.max(2, Math.min(6, R().nbEquipes + Number(d.d))); save(); rendre(); },
+    nbEquipes(d) { R().nbEquipes = Math.max(express() ? 1 : 2, Math.min(express() ? Math.min(6, actives().length) : 6, R().nbEquipes + Number(d.d))); save(); rendre(); },
     animateur() { avecCode(() => ouvrir(fenetreAnimateur())); },
     dossierGeneral() { ouvrir(fenetreSuspects()); },
+    choixExpress(d) {
+      const p = P(), i = Number(d.i);
+      p.equipes.forEach((x, j) => { if (j !== i && x.enigme === d.id) x.enigme = null; });
+      p.equipes[i].enigme = d.id; save(); rendre();
+    },
     lancerEnquete() {
+      if (express() && P().equipes.some(eq => !eq.enigme)) { toast("Chaque équipe doit d'abord choisir son énigme."); return; }
       avecCode(() => { const p = P(); p.phase = "enquete"; p.enquete.debut = now(); p.tourVu = 1; save(); son("fin"); rendre(); if (rotation()) annoncerTour(1); });
     },
     bonusTuile(d) { const e = enigme(d.id); if (e) ouvrir(fenetreChoixEquipe(e)); },
@@ -1101,6 +1142,9 @@
         el.classList.toggle("alerte", r > 0 && r < 5 * 60000);
         el.classList.toggle("fini", r <= 0);
         if (r <= 0 && !p.finSonnee) { p.finSonnee = true; save(); son("alarme"); toast("Temps écoulé ! L'animateur passe à l'accusation."); }
+        if (express() && r > 0 && !p.toutResoluVu && tousExpressFinis()) {
+          p.toutResoluVu = true; save(); son("fin"); toast("Toutes les énigmes sont résolues : tous les indices sont débloqués. Mettez-les en commun, puis passez à l'accusation (menu Animateur).");
+        }
         const rot = rotation(), zr = $("#rot");
         if (rot) {
           const fin = !rot.fini && r > 0 && !p.enquete.pauseDebut && tousFinis(rot);
