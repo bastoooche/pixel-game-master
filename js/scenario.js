@@ -67,9 +67,9 @@ window.SCENARIO = {
       id: "E1", indice: 2, nom: "Le code des résistances", domaine: "Électronique", code: "4216", minutes: 6, reference: true,
       coups: ["Chaque couleur vaut un chiffre.", "La 1re bande est celle collée au bord, à l'opposé de la bande dorée."],
       solution: "Premières bandes de R1 à R4 : jaune (4), rouge (2), marron (1), bleu (6). Code 4216.",
-      expert: { code: "5600",
-        coups: ["Lisez chaque valeur en entier : 1re et 2e bande = deux chiffres, 3e bande = le nombre de zéros (pour 5 bandes : trois chiffres, puis la 4e bande). R1 = 4 700 Ω.", "R2 et R4 en série : 9 000 Ω. En parallèle avec R3 : 1/R = 1/9000 + 1/1000, donc 900 Ω. Il reste à ajouter R1."],
-        solution: "R1 = 4 700 Ω, R2 = 2 200 Ω, R3 = 1 000 Ω, R4 = 6 800 Ω. R2 + R4 = 9 000 Ω ; en parallèle avec R3 : 900 Ω ; plus R1 en série : 5 600 Ω. Code 5600." },
+      expert: { code: "1246",
+        coups: ["Lisez chaque valeur en entier : pour 4 bandes, deux chiffres puis le nombre de zéros ; pour 5 bandes, trois chiffres puis le nombre de zéros. R2 vaut 2 200 Ω, pas 220.", "Dans l'ordre croissant : R3 (1 000 Ω), R2 (2 200 Ω), R1 (4 700 Ω), R4 (6 800 Ω). Prenez la 1re bande de chacune, dans cet ordre."],
+        solution: "R1 = 4 700 Ω, R2 = 2 200 Ω, R3 = 1 000 Ω, R4 = 6 800 Ω. De la plus faible à la plus forte : R3, R2, R1, R4. Leurs 1res bandes : marron (1), rouge (2), jaune (4), bleu (6). Code 1246." },
       debrief: { fait: "Tu as lu la valeur d'un composant électronique.", isen: "C'est le premier geste de l'électronique, qu'on pratique dès le cycle préparatoire." }
     },
     {
