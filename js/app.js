@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.1.0";
+  const VERSION_APP = "v2.1.1";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -303,6 +303,7 @@
     const p = P(), eq = p.equipes[iEq];
     const e = actives().find(x => codeDe(x) === code);
     if (e && eq.resolues.some(r => r.id === e.id)) return { type: "deja", e };
+    if (e && express() && eq.enigme !== e.id && !(p.bonus || []).includes(e.id)) return { type: "autre", e, prop: p.equipes.find(x => x.enigme === e.id) || null };
     if (!e) {
       eq.erreurs++; eq.verrouJusqua = now() + R().penaliteSec * 1000; save(); son("err");
       return { type: "faux" };
@@ -391,7 +392,7 @@
       <section class="panneau pile"><h2 style="margin:0">Format</h2>
         <div class="grille g2">
           <button class="carte choix ${r.format !== "express" ? "choisi" : ""}" data-a="format" data-v="complet"><div class="num">1h30 · 4 à 6 équipes</div><strong>Complet</strong><div class="douce" style="font-size:15px">Toutes les équipes font toutes les énigmes, en rotation. Enquête de 45 minutes.</div></button>
-          <button class="carte choix ${r.format === "express" ? "choisi" : ""}" data-a="format" data-v="express"><div class="num">30 à 40 min · peu de participants</div><strong>Express</strong><div class="douce" style="font-size:15px">Chaque équipe (ou chaque élève) choisit une énigme selon ses goûts. Tout le monde joue en même temps, puis indices en commun, accusation et finale. Enquête de 20 minutes.</div></button>
+          <button class="carte choix ${r.format === "express" ? "choisi" : ""}" data-a="format" data-v="express"><div class="num">25 à 40 min · peu de participants</div><strong>Express</strong><div class="douce" style="font-size:15px">Chaque équipe (ou chaque élève) choisit une énigme selon ses goûts. Tout le monde joue en même temps ; une équipe qui a fini aide les autres. Enquête de 10 min (Découverte) ou 20 min (Expert).</div></button>
         </div></section>
       <div class="grille g2">
         <section class="panneau pile"><h2>Équipes</h2>
@@ -450,14 +451,14 @@
       return `<div class="pile" style="gap:8px"><div class="ligne"><span class="couleur-pastille" style="background:${c.hex}"></span><strong style="font-size:20px">${esc(eq.nom)}</strong></div><div class="grille" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">${boutons}</div></div>`;
     }).join("");
     return `<section class="panneau pile"><h2 style="margin:0">Format express : chaque équipe choisit son énigme</h2>
-      <p class="douce" style="margin:0">Selon vos goûts : électronique, intelligence artificielle, cybersécurité ou informatique. Toutes les équipes jouent en même temps ; quand chacune a trouvé son code, vous mettez vos indices en commun pour la finale.</p>${lignes}</section>`;
+      <p class="douce" style="margin:0">Selon vos goûts : électronique, intelligence artificielle, cybersécurité ou informatique. Toutes les équipes jouent en même temps. Une équipe qui a fini va aider une autre, sans lui donner la réponse ; quand chacune a trouvé son code, vous mettez vos indices en commun pour la finale.</p>${lignes}</section>`;
   }
 
   function vueBrief() {
     return barre(`<span class="phase-pill">Briefing</span><button class="btn contour petit" data-a="animateur">Animateur</button>`) + `<main class="page pile">
       <div class="grille g2">
         <section class="panneau pile" style="background:var(--rouge);color:#fff"><div class="mission-tete"><div><span class="etiquette" style="color:#fff">Mission</span><h1 style="color:#fff">${esc(S.titre)}</h1></div><img class="mascotte-mini" src="img/pixel.png" alt="PIXEL"></div>${S.pitch.map(t => `<p style="font-size:20px">${esc(t)}</p>`).join("")}</section>
-        <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${(express() ? ["Chaque équipe joue l'énigme qu'elle a choisie ci-dessous. Toutes les équipes jouent en même temps.", ...S.regles.slice(1)] : S.regles).map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
+        <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${(express() ? ["Chaque équipe joue l'énigme qu'elle a choisie ci-dessous. Toutes les équipes jouent en même temps.", ...S.regles.slice(1), "Vous avez fini ? Allez aider une autre équipe, sans lui donner la réponse : c'est elle qui saisit son code."] : S.regles).map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
           <p class="douce">${express() ? "Format express · " + pl(P().equipes.length, "énigme") + " en parallèle" : actives().length + " stations"} · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.${expert() ? " <strong>Niveau Expert.</strong>" : ""}</p></section>
       </div>
       ${express() ? choixExpressHTML() : ""}
@@ -602,6 +603,7 @@
       },
       vueResultat() {
         const r = this.resultat;
+        if (r.type === "autre") return `<div class="carte centre"><h3>${r.prop ? "Bon code… mais pas le vôtre" : "Énigme pas jouée aujourd'hui"}</h3><p>${r.prop ? `${esc(r.e.id)} · ${esc(r.e.nom)} est l'énigme de l'${esc(r.prop.nom)} : c'est à elle de saisir son code. Merci pour l'aide !` : "Allez plutôt aider une équipe qui bloque, sans lui donner la réponse."} Pas de pénalité.</p></div><div class="ligne mt" style="justify-content:center"><button class="btn" data-a="fermer">OK</button></div>`;
         if (r.type === "deja") return `<div class="carte centre"><h3>Énigme déjà résolue</h3><p>${esc(r.e.id)} · ${esc(r.e.nom)}. Pas de pénalité, va vers une autre station.</p></div><div class="ligne mt" style="justify-content:center"><button class="btn" data-a="fermer">OK</button></div>`;
         const bonus = r.indices.length > 1 ? `<p class="centre" style="margin:12px 0 0;font-weight:700">Toutes vos énigmes sont résolues : vous gagnez aussi le dernier indice !</p>` : "";
         const ind = r.indices.length ? bonus + r.indices.map(i => `<div class="carte indice mt"><div class="num">Indice n° ${i.n} · ${esc(i.titre)}</div><p style="font-size:21px;margin:6px 0 0">${esc(i.texte)}</p></div>`).join("") : `<div class="carte mt"><p style="margin:0">Pas de nouvel indice avec cette énigme. Elle rapporte quand même ${PTS.enigme} points.</p></div>`;
@@ -965,14 +967,15 @@
     },
     format(d) {
       const r = R(); if (r.format === d.v) return;
-      r.format = d.v; r.dureeEnquete = d.v === "express" ? 20 : S.dureeEnquete;
+      r.format = d.v; r.dureeEnquete = d.v === "express" ? (r.niveau === "expert" ? 20 : 10) : S.dureeEnquete;
       if (d.v === "express" && r.nbEquipes > actives().length) r.nbEquipes = actives().length;
       save(); rendre();
-      toast(d.v === "express" ? "Format express : une énigme par équipe, 20 minutes d'enquête." : "Format complet : rotation de toutes les énigmes, 45 minutes.");
+      toast(d.v === "express" ? `Format express : une énigme par équipe, ${r.dureeEnquete} minutes d'enquête.` : "Format complet : rotation de toutes les énigmes, 45 minutes.");
     },
     niveau(d) {
       const r = R(); if (r.niveau === d.v) return;
       r.niveau = d.v; r.codes = {}; r.dureeFinale = d.v === "expert" ? 6 : S.dureeFinale;
+      if (r.format === "express") r.dureeEnquete = d.v === "expert" ? 20 : 10;
       save(); B = nouveauBoitier(); saveB(); rendre();
       toast(d.v === "expert" ? "Niveau Expert : finale de 6 minutes, nouvelle combinaison du boîtier." : "Niveau Découverte : finale de 10 minutes.");
     },
