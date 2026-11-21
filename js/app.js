@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.1.3";
+  const VERSION_APP = "v2.2.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -357,7 +357,7 @@
       <section class="pile">${reprise}
         <button class="tuile-menu" data-a="nouvelle"><span class="etiquette">Animateur</span><strong>Nouvelle partie</strong><span>Vérifie les réglages, puis lance le briefing.</span></button>
         <div class="grille ${enigme("E9") && !enigme("E9").veille ? "g2" : ""}">
-          ${enigme("E9") && !enigme("E9").veille ? `<button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>Station circuit</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>` : ""}
+          ${enigme("E9") && !enigme("E9").veille ? `<button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>La chaîne humaine</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>` : ""}
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
@@ -717,31 +717,77 @@
   const stationFerme = {};          // touche -> true tant que le circuit est fermé
   let stationTest = {};             // cases allumées au doigt (mode test)
   let stationAlarmeT = null;
+  /* Station E9 « La chaîne humaine » : 4 missions, chacune révèle un chiffre du code */
+  const NOM_BORNE = k => (S.stationCircuit.find(p => p.touche === k) || {}).porte || k;
+  const TOUCHES = () => S.stationCircuit.map(p => p.touche);
+  let ST = null;                     // état de la station
+  function nouvellesMissions() {
+    const T = TOUCHES(), CH = S.stationCircuit.map(p => p.chiffre);
+    let a1 = T[0], paire = [T[1], T[2]], a4 = T[3];
+    if (expert()) {                  // Expert : bornes tirées au hasard à chaque partie
+      const m = T.slice().sort(() => Math.random() - .5);
+      a1 = m[0]; paire = [m[1], m[2]]; a4 = m[3];
+    }
+    return [
+      { bornes: [a1], titre: `Fermez la borne ${NOM_BORNE(a1)}`, aide: "Un élève tient la poignée MASSE, un autre touche la borne. Donnez-vous la main.", chiffre: CH[0] },
+      { bornes: paire, titre: `${NOM_BORNE(paire[0])} et ${NOM_BORNE(paire[1])} en même temps`, aide: "Deux branches qui partent de la même poignée : c'est un circuit en parallèle.", chiffre: CH[1] },
+      { bornes: T.slice(), titre: "Les 4 bornes en même temps", aide: "Une seule chaîne humaine, et chacun touche une borne avec ce qu'il a de libre : coude, genou, joue…", chiffre: CH[2] },
+      { bornes: [a4], titre: `${NOM_BORNE(a4)}, sans la toucher avec la peau`, aide: "Passez par un objet de la boîte : lesquels laissent passer le courant ?", chiffre: CH[3] }
+    ];
+  }
+  function stationInit() { ST = { missions: nouvellesMissions(), k: 0, debutTenue: null, trop: false, expert: expert() }; }
+  const tenueMs = () => (ST && ST.expert ? 4000 : 2000);
+  const bornesFermees = () => TOUCHES().filter(t => stationFerme[t] || stationTest[t]);
+  function etatMission() {
+    if (!ST || ST.k >= ST.missions.length) return { ok: false, trop: false };
+    const m = ST.missions[ST.k], f = bornesFermees();
+    const toutes = m.bornes.every(b => f.includes(b)), enTrop = f.some(b => !m.bornes.includes(b));
+    return { ok: toutes && !(ST.expert && enTrop), trop: ST.expert && toutes && enTrop };
+  }
+  function stationTick() {
+    if (vue() !== "station" || !ST || ST.k >= ST.missions.length) return;
+    const e = etatMission();
+    if (e.ok) {
+      if (!ST.debutTenue) ST.debutTenue = now();
+      const p = Math.min(1, (now() - ST.debutTenue) / tenueMs());
+      const barre = $("#stJauge"); if (barre) barre.style.width = (p * 100) + "%";
+      if (p >= 1) { ST.k++; ST.debutTenue = null; son(ST.k >= ST.missions.length ? "fin" : "ok"); rendre(); }
+    } else if (ST.debutTenue) { ST.debutTenue = null; const barre = $("#stJauge"); if (barre) barre.style.width = "0%"; }
+    const t = $("#stTrop"); if (t) t.classList.toggle("cache", !e.trop);
+  }
+  setInterval(stationTick, 100);
   function vueStation() {
-    const e2 = enigme("E9");
-    const cases = S.stationCircuit.map(p => {
-      const on = stationFerme[p.touche] || stationTest[p.touche];
-      return `<button class="porte-case ${on ? "on" : ""}" data-a="stationTest" data-touche="${p.touche}" data-porte="${p.touche}">
-        <span class="porte-nom">${esc(p.porte)}</span><span class="porte-chiffre">${on ? esc(p.chiffre) : "?"}</span>
-        <span class="porte-etat">${on ? "circuit fermé" : "circuit ouvert"}</span></button>`;
+    if (!ST || ST.expert !== expert()) stationInit();
+    const e9 = enigme("E9"), fini = ST.k >= ST.missions.length, m = ST.missions[ST.k];
+    const f = bornesFermees();
+    const bornes = S.stationCircuit.map(p => {
+      const on = f.includes(p.touche), vise = !fini && m.bornes.includes(p.touche);
+      return `<button class="porte-case ${on ? "on" : ""} ${vise ? "vise" : ""}" data-a="stationTest" data-touche="${p.touche}">
+        <span class="porte-nom">${esc(p.porte)}</span><span class="porte-etat">${on ? "circuit fermé" : "ouvert"}</span></button>`;
     }).join("");
-    return `<header class="topbar" style="border-color:rgba(255,252,247,.15)"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Station E9</span><span class="titre" style="color:#fff">${esc(e2 ? e2.nom : "Station circuit")}</span></div><div class="spacer"></div>
+    const code = ST.missions.map((mi, i) => `<span class="st-chiffre ${i < ST.k ? "ok" : ""}">${i < ST.k ? esc(mi.chiffre) : "?"}</span>`).join("");
+    const etapes = ST.missions.map((mi, i) => `<span class="st-etape ${i < ST.k ? "ok" : i === ST.k ? "cours" : ""}">${i + 1}</span>`).join("");
+    const centre = fini
+      ? `<div class="st-mission fini"><div class="etiquette" style="color:var(--encre)">Toutes les missions sont réussies</div><h2>Saisissez le code sur la tablette principale</h2></div>`
+      : `<div class="st-mission"><div class="ligne" style="justify-content:center;gap:10px">${etapes}</div>
+          <div class="etiquette" style="color:rgba(255,252,247,.7)">Mission ${ST.k + 1} sur ${ST.missions.length}</div>
+          <h2>${esc(m.titre)}</h2><p>${esc(m.aide)}</p>
+          <div class="st-jauge"><div id="stJauge"></div></div>
+          <p class="douce" style="color:rgba(255,252,247,.65);margin:0">Tenez ${tenueMs() / 1000} secondes sans lâcher.${ST.expert ? " Aucune autre borne ne doit être fermée." : ""}</p>
+          <div id="stTrop" class="alarme cache">Trop de bornes fermées : lâchez les autres !</div></div>`;
+    return `<header class="topbar" style="border-color:rgba(255,252,247,.15)"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Station E9${ST.expert ? " · Expert" : ""}</span><span class="titre" style="color:#fff">${esc(e9 ? e9.nom : "La chaîne humaine")}</span></div><div class="spacer"></div>
+      <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="stationRecommencer">Recommencer</button>
       <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="quitterStation">Quitter</button><button class="icon-btn" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="pleinecran" aria-label="Plein écran">⤢</button></header>
-      <main class="station"><p style="font-size:22px;max-width:900px">Banc de test : posez les pinces sur votre feuille. Chaque circuit fermé, de sa porte jusqu'à la bande MASSE, affiche son chiffre.</p>
-      <div class="portes-cases">${cases}</div>
-      <div id="stationAlarme" class="alarme cache">ALARME : ton trait touche une zone interdite !</div>
-      <p style="opacity:.55;font-size:15px;max-width:900px">Animateur : touche une case pour la tester sans Makey Makey. Câblage : portes HAUT, BAS, GAUCHE, DROITE sur Up, Down, Left, Right ; bande MASSE sur Earth.</p></main>`;
+      <main class="station st-chaine">${centre}
+      <div class="portes-cases">${bornes}</div>
+      <div class="st-code"><span class="etiquette" style="color:rgba(255,252,247,.7)">Code</span>${code}</div>
+      <p style="opacity:.55;font-size:14px;max-width:900px;margin:0">Animateur : touche une borne pour la tester sans Makey Makey. Câblage : poignée MASSE sur Earth ; bornes HAUT, BAS, GAUCHE, DROITE sur Up, Down, Left, Right.</p></main>`;
   }
   function stationKey(key, enfonce) {
-    if (key === " " || key === "Spacebar") {
-      if (enfonce) { son("err"); const a = $("#stationAlarme"); if (a) { a.classList.remove("cache"); clearTimeout(stationAlarmeT); stationAlarmeT = setTimeout(() => a.classList.add("cache"), 2500); } }
-      return true;
-    }
-    const p = S.stationCircuit.find(x => x.touche === key);
-    if (!p) return false;
+    if (!TOUCHES().includes(key)) return false;
     const avant = !!stationFerme[key];
     stationFerme[key] = enfonce;
-    if (enfonce && !avant) son("ok");
+    if (enfonce && !avant) son("tic");
     if (avant !== enfonce) rendre();
     return true;
   }
@@ -1051,7 +1097,8 @@
     },
     etape(d) { const p = P(); p.etape = Math.max(0, Math.min(4, (p.etape || 0) + Number(d.d))); save(); rendre(); },
     terminer() { avecCode(() => { store.partie = null; save(); aller("accueil"); }); },
-    stationTest(d) { stationTest[d.touche] = !stationTest[d.touche]; if (stationTest[d.touche]) son("ok"); rendre(); },
+    stationTest(d) { stationTest[d.touche] = !stationTest[d.touche]; if (stationTest[d.touche]) son("tic"); rendre(); },
+    stationRecommencer() { avecCode(() => { stationInit(); stationTest = {}; rendre(); }); },
     quitterStation() { avecCode(() => aller("accueil")); },
     fil(d) {
       if (B.ok.A) return;

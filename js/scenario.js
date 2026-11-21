@@ -126,19 +126,19 @@ window.SCENARIO = {
     },
     // Version Makey Makey (2e tablette, écran « Station circuit » : adresse #station). Peut s'ajouter en cours de partie en plus de E2.
     {
-      id: "E9", indice: 4, nom: "Le circuit au crayon", domaine: "Électronique", code: "6419", minutes: 10, reference: false, pret: true, veille: true,   // en veille : contact pince/graphite à fiabiliser (encre conductrice)
-      coups: ["Ta réponse à chaque question donne l'entrée du labyrinthe : une seule entrée rejoint la bande MASSE. Appuie fort et repasse 3 fois.", "Les bonnes entrées : HAUT A, BAS B, GAUCHE B, DROITE A."],
-      solution: "Les 4 circuits fermés affichent 6, 4, 1, 9 de gauche à droite. Code 6419.",
-      debrief: { fait: "Tu as fermé un circuit pour envoyer un signal à un écran.", isen: "Un circuit, une entrée, un signal, un affichage : c'est le principe de tout objet connecté." }
+      id: "E9", indice: 4, nom: "La chaîne humaine", domaine: "Électronique", code: "6419", minutes: 10, reference: false, pret: true,
+      coups: ["Le corps humain conduit le courant : le porteur de la poignée MASSE doit être relié, main dans la main, à celui qui touche la borne. Lisez la mission à l'écran et tenez la position jusqu'à ce que la barre soit pleine.", "Pour les 4 bornes en même temps : une seule chaîne, et chacun touche une borne avec ce qu'il a de libre (coude, genou, joue). Pour la dernière mission, touchez la borne avec un objet de la boîte : la clé passe, la règle en plastique non."],
+      solution: "Les 4 missions révèlent 6, 4, 1 et 9. Code 6419.",
+      debrief: { fait: "Vous avez fermé des circuits avec votre propre corps : en série, en parallèle, et à travers des conducteurs.", isen: "Un circuit, c'est comme une équipe d'ingénieurs : il suffit d'un maillon qui lâche pour que tout s'arrête." }
     }
   ],
 
-  // Énigme E9 (Makey Makey) : touches envoyées par le Makey Makey → chiffre affiché par la station
+  // Énigme E9 « La chaîne humaine » (Makey Makey) : les 4 bornes, sur Up, Down, Left, Right ; la poignée MASSE sur Earth
   stationCircuit: [
-    { touche: "ArrowUp", porte: "Porte Haut", chiffre: "6" },
-    { touche: "ArrowDown", porte: "Porte Bas", chiffre: "4" },
-    { touche: "ArrowLeft", porte: "Porte Gauche", chiffre: "1" },
-    { touche: "ArrowRight", porte: "Porte Droite", chiffre: "9" }
+    { touche: "ArrowUp", porte: "HAUT", chiffre: "6" },
+    { touche: "ArrowDown", porte: "BAS", chiffre: "4" },
+    { touche: "ArrowLeft", porte: "GAUCHE", chiffre: "1" },
+    { touche: "ArrowRight", porte: "DROITE", chiffre: "9" }
   ],
 
   // Pages du manuel du boîtier, attribuées aux équipes dans l'ordre
