@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v1.6.3";
+  const VERSION_APP = "v2.0.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -32,6 +32,7 @@
       seuilManuel: 3,
       rotationMin: 10,
       penaliteSec: 60,
+      niveau: "decouverte",
       lienFin: "",
       cachette: "",
       pin: "2026"
@@ -64,7 +65,10 @@
   }
   const couleur = id => COULEURS.find(c => c.id === id) || COULEURS[0];
   const enigme = id => S.enigmes.find(e => e.id === id);
-  const codeDe = e => (R().codes[e.id] || e.code);
+  const expert = () => R().niveau === "expert";
+  const versionDe = e => (expert() && e.expert) ? e.expert : e;          // contenu de l'énigme au niveau choisi
+  const codeBase = e => versionDe(e).code || e.code;
+  const codeDe = e => (R().codes[e.id] || codeBase(e));
   // Stations de la rotation : figées au lancement de la partie. Énigmes en plus : ajoutées à la volée, hors rotation.
   const stationsBase = () => { const p = P(), ids = p && p.stations ? p.stations : R().actives; return S.enigmes.filter(e => ids.includes(e.id)); };
   const actives = () => { const p = P(), ids = new Set(p && p.stations ? p.stations : R().actives); ((p && p.bonus) || []).forEach(id => ids.add(id)); return S.enigmes.filter(e => ids.has(e.id)); };
@@ -72,6 +76,12 @@
   const cachette = () => (R().cachette || "").trim() || S.cachette;
 
   function fichesPour(index, nb) {
+    if (expert()) {
+      if (nb <= 2) return [["A", "B", "E"], ["C", "D"]][index] || [];
+      if (nb === 3) return [["A", "B"], ["C", "E"], ["D"]][index] || [];
+      if (nb === 4) return [["A"], ["B"], ["C", "E"], ["D"]][index] || [];
+      return [["A"], ["B"], ["C"], ["D"], ["E", "S"], []][index] || [];
+    }
     if (nb <= 2) return [["A", "B"], ["C", "D"]][index] || [];
     if (nb === 3) return [["A", "B"], ["C"], ["D"]][index] || [];
     return [["A"], ["B"], ["C"], ["D"], ["S"], []][index] || [];
@@ -365,6 +375,12 @@
       <td><input type="text" inputmode="numeric" maxlength="4" value="${esc(codeDe(e))}" data-set="code" data-id="${e.id}" aria-label="Code de ${esc(e.nom)}"></td></tr>`).join("");
     return barre(`<button class="btn contour petit" data-a="aller" data-v="accueil">Accueil</button>`) + `<main class="page pile">
       <h1>Réglages</h1>
+      <section class="panneau pile"><h2 style="margin:0">Niveau</h2>
+        <div class="grille g2">
+          <button class="carte choix ${r.niveau !== "expert" ? "choisi" : ""}" data-a="niveau" data-v="decouverte"><div class="num">Seconde, JPO, grand public</div><strong>Découverte</strong><div class="douce" style="font-size:15px">Énigmes guidées, finale de 10 minutes.</div></button>
+          <button class="carte choix ${r.niveau === "expert" ? "choisi" : ""}" data-a="niveau" data-v="expert"><div class="num">Terminale scientifique, 1re année</div><strong>Expert</strong><div class="douce" style="font-size:15px">Calculs, Vigenère, hexadécimal ; finale de 6 minutes, 3 erreurs maximum et un 5e module (loi d'Ohm). Supports « Expert » à imprimer.</div></button>
+        </div>
+        <p class="douce" style="margin:0">Le niveau se règle sur chaque tablette : pensez aussi au boîtier (menu Animateur du boîtier).</p></section>
       <div class="grille g2">
         <section class="panneau pile"><h2>Équipes</h2>
           <div class="stepper"><button class="icon-btn" data-a="nbEquipes" data-d="-1" aria-label="Moins d'équipes">−</button><span class="val">${r.nbEquipes}</span><button class="icon-btn" data-a="nbEquipes" data-d="1" aria-label="Plus d'équipes">+</button><span class="douce">équipes (2 à 6)</span></div>
@@ -416,7 +432,7 @@
       <div class="grille g2">
         <section class="panneau pile" style="background:var(--rouge);color:#fff"><div class="mission-tete"><div><span class="etiquette" style="color:#fff">Mission</span><h1 style="color:#fff">${esc(S.titre)}</h1></div><img class="mascotte-mini" src="img/pixel.png" alt="PIXEL"></div>${S.pitch.map(t => `<p style="font-size:20px">${esc(t)}</p>`).join("")}</section>
         <section class="panneau pile"><h2>Les règles</h2><ol style="margin:0;padding-left:24px;font-size:19px">${S.regles.map(t => `<li style="margin-bottom:8px">${esc(t)}</li>`).join("")}</ol>
-          <p class="douce">${actives().length} stations · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.</p></section>
+          <p class="douce">${actives().length} stations · ${R().dureeEnquete} minutes d'enquête · puis une finale où toutes les équipes devront coopérer.${expert() ? " <strong>Niveau Expert.</strong>" : ""}</p></section>
       </div>
       ${Number(R().rotationMin) ? `<section class="pile"><h2>Qui commence où ?</h2><p class="douce" style="margin:0">Toutes les ${R().rotationMin} minutes, la tablette sonne « On tourne ! » : chaque équipe passe à la station suivante.</p>${tableauRotation()}</section>` : ""}
       <section class="pile"><h2>Les suspects</h2>${cartesSuspects()}</section>
@@ -572,7 +588,7 @@
             <div class="ligne mt"><button class="btn contour" data-a="onglet" data-o="code">Retour</button></div>`;
         }
         const e = enigme(this.choix), n = eq.coups[e.id] || 0;
-        const textes = [...e.coups, "Solution : " + e.solution];
+        const v = versionDe(e), textes = [...v.coups, "Solution : " + v.solution];
         const vus = textes.slice(0, n).map((t, k) => `<div class="carte indice" style="margin-bottom:12px"><div class="num">${k < 2 ? "Coup de pouce " + (k + 1) : "Solution"}</div><p style="font-size:20px;margin:4px 0 0">${esc(t)}</p></div>`).join("");
         const suivant = n < 3 ? `<button class="btn ${this.confirme ? "" : "bleu"}" data-a="voirCoup">${this.confirme ? "Confirmer : −" + COUTS[n] + " points" : (n < 2 ? "Voir le coup de pouce " + (n + 1) : "Voir la solution") + " (−" + COUTS[n] + " pts)"}</button>` : "";
         return `<h3>${esc(e.id)} · ${esc(e.nom)}</h3>${vus || `<p class="douce">Aucun coup de pouce utilisé sur cette énigme.</p>`}
@@ -708,6 +724,24 @@
   const SIMON = ["rouge", "bleu", "vert", "jaune"];
   const MAP_VOYELLE = { rouge: "bleu", bleu: "jaune", vert: "vert", jaune: "rouge" };
   const MAP_SANS = { rouge: "jaune", bleu: "vert", vert: "rouge", jaune: "bleu" };
+  // Expert : la correspondance change avec le nombre d'erreurs déjà commises (0, 1 ou 2)
+  const MAPS_EXPERT = {
+    voyelle: [MAP_VOYELLE, { rouge: "jaune", bleu: "vert", vert: "bleu", jaune: "rouge" }, { rouge: "vert", bleu: "rouge", vert: "jaune", jaune: "bleu" }],
+    sans: [MAP_SANS, { rouge: "rouge", bleu: "jaune", vert: "bleu", jaune: "vert" }, { rouge: "bleu", bleu: "rouge", vert: "jaune", jaune: "vert" }]
+  };
+  const MAX_ERREURS_EXPERT = 3;
+  // Module E (Expert) : loi d'Ohm
+  const BANDES = { noir: "#1b1b1b", marron: "#6B3A1E", rouge: "#D3202A", orange: "#F08A1C", jaune: "#F4C20D", vert: "#2E9B47", bleu: "#1F5FC4", violet: "#7B3FA0", gris: "#8A8A8A", blanc: "#F7F7F7" };
+  const ORDRE_BANDES = ["noir", "marron", "rouge", "orange", "jaune", "vert", "bleu", "violet", "gris", "blanc"];
+  function tirerOhm() {
+    const valeurs = [[1, 0, 2], [1, 5, 1], [2, 2, 1], [3, 3, 1], [4, 7, 1], [6, 8, 1], [1, 5, 2], [2, 2, 2], [3, 3, 2], [4, 7, 2], [6, 8, 2], [2, 7, 1], [3, 9, 1], [5, 6, 1], [8, 2, 1]];
+    for (let essai = 0; essai < 200; essai++) {
+      const [d1, d2, m] = valeurs[alea(valeurs.length)], U = [5, 9, 12][alea(3)];
+      const R = (d1 * 10 + d2) * Math.pow(10, m), I = U / R * 1000, frac = I - Math.floor(I);
+      if (I >= 2 && I <= 150 && Math.abs(frac - 0.5) > 0.1 && Math.abs(I - Math.round(I)) > 0.05) return { d1, d2, m, U, R, I: Math.round(I) };
+    }
+    return { d1: 4, d2: 7, m: 1, U: 9, R: 470, I: 19 };
+  }
   const alea = n => Math.floor(Math.random() * n);
   const melange = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = alea(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -719,12 +753,14 @@
       lettres, chiffres,
       fils: melange(Object.keys(FILS)), debranche: null,
       bouton: alea(2) === 0 ? "blanc" : ["bleu", "rouge", "vert"][alea(3)],   // le blanc (le plus subtil) sort 1 fois sur 2
-      sequence: [SIMON[alea(4)], SIMON[alea(4)], SIMON[alea(4)]], prog: 0,
-      ok: { A: false, B: false, C: false, D: false },
+      sequence: Array.from({ length: expert() ? 5 : 3 }, () => SIMON[alea(4)]), prog: 0,
+      expert: expert(), ohm: tirerOhm(), saisieOhm: "", strikes: 0,
+      ok: { A: false, B: false, C: false, D: false, E: !expert() },
       code: "", erreurs: 0, chrono: { debut: null, pauseDebut: null, pauseCumul: 0 }, ouvertA: null
     };
   }
   let B = lire(LS_BOITIER) || nouveauBoitier();
+  if (B.expert === undefined || B.expert !== expert()) B = nouveauBoitier();
   const saveB = () => { if (!window.__razEnCours) ecrire(LS_BOITIER, B); };
   const voyelle = () => /[AEIOU]/.test(B.lettres);
   function filAttendu() {
@@ -741,13 +777,23 @@
     if (B.bouton === "vert") return "double";
     return voyelle() ? "long" : "bref";
   }
-  const sequenceAttendue = () => B.sequence.map(c => (voyelle() ? MAP_VOYELLE : MAP_SANS)[c]);
+  const tableC = () => B.expert ? MAPS_EXPERT[voyelle() ? "voyelle" : "sans"][Math.min(2, B.strikes || 0)] : (voyelle() ? MAP_VOYELLE : MAP_SANS);
+  const sequenceAttendue = () => B.sequence.map(c => tableC()[c]);
   const codeAttendu = () => String(S.solution.suspect) + B.chiffres.split("").reverse().join("");
   const resteBoitier = () => R().dureeFinale * 60000 - B.erreurs * PENALITE_FINALE_MS - ecoule(B.chrono);
 
   function erreurBoitier(msg) {
-    B.erreurs++; saveB(); son("err");
+    B.erreurs++; son("err");
     if (!B.chrono.debut) B.chrono.debut = now();
+    if (B.expert) {
+      B.strikes = (B.strikes || 0) + 1;
+      if (B.strikes >= MAX_ERREURS_EXPERT) {
+        B.strikes = 0; B.ok = { A: false, B: false, C: false, D: false, E: false }; B.prog = 0; B.code = ""; B.saisieOhm = ""; B.debranche = null;
+        saveB(); son("alarme"); toast("ALARME ! 3 erreurs : le système se réarme, tous les modules sont à refaire.");
+        rendre(); return;
+      }
+    }
+    saveB();
     toast(msg || "Erreur ! −30 secondes");
     document.querySelectorAll(".led").forEach(l => { l.classList.add("err"); setTimeout(() => l.classList.remove("err"), 600); });
     majEnteteBoitier();
@@ -755,10 +801,18 @@
   function moduleOK(id) {
     B.ok[id] = true; saveB(); son("ok");
     if (!B.chrono.debut) B.chrono.debut = now();
-    if (B.ok.A && B.ok.B && B.ok.C && B.ok.D) { B.ouvertA = now(); saveB(); son("fin"); }
+    if (B.ok.A && B.ok.B && B.ok.C && B.ok.D && B.ok.E) { B.ouvertA = now(); saveB(); son("fin"); }
     rendre();
   }
-  function majEnteteBoitier() { const e = $("#bErreurs"); if (e) e.textContent = B.erreurs; }
+  const texteErreurs = () => B.expert ? `${B.strikes || 0} / ${MAX_ERREURS_EXPERT}` : String(B.erreurs);
+  function majEnteteBoitier() { const e = $("#bErreurs"); if (e) e.textContent = texteErreurs(); }
+  function resistanceSVG(o) {
+    const bandes = [ORDRE_BANDES[o.d1], ORDRE_BANDES[o.d2], ORDRE_BANDES[o.m]];
+    const xs = [70, 100, 130];
+    return `<svg viewBox="0 0 300 80" style="width:100%;max-width:380px"><line x1="0" y1="40" x2="300" y2="40" stroke="#C9CCD1" stroke-width="5"/>
+      <rect x="50" y="18" width="200" height="44" rx="22" fill="#E7D3A6"/>
+      ${bandes.map((c, k) => `<rect x="${xs[k]}" y="18" width="16" height="44" fill="${BANDES[c]}"/>`).join("")}<rect x="210" y="18" width="16" height="44" fill="#C9A227"/></svg>`;
+  }
 
   function vueBoitier() {
     if (B.ouvertA) {
@@ -771,23 +825,29 @@
     const fils = B.fils.map((c, k) => `<button class="fil ${B.debranche === k ? "debranche" : ""}" data-a="fil" data-k="${k}" ${B.ok.A ? "disabled" : ""}><span>${k + 1}</span><span class="borne"></span><span class="cable" style="background:${FILS[c]}"></span><span class="borne"></span></button>`).join("");
     const simon = SIMON.map(c => `<button data-a="simon" data-c="${c}" data-simon="${c}" style="background:${FILS[c]};color:${FILS[c]}" ${B.ok.C ? "disabled" : ""}><span style="color:rgba(0,0,0,.55)">${c.toUpperCase()}</span></button>`).join("");
     const progC = sequenceAttendue().map((_, k) => `<span class="puce ${k < B.prog || B.ok.C ? "pleine" : ""}"></span>`).join("");
-    const dFerme = !(B.ok.A && B.ok.B && B.ok.C);
+    const dFerme = !(B.ok.A && B.ok.B && B.ok.C && B.ok.E);
+    const moduleE = B.expert ? `<section class="module ${B.ok.E ? "resolu" : ""}"><h3><span class="led ${B.ok.E ? "ok" : ""}"></span>Module E · Le courant</h3>
+          ${resistanceSVG(B.ohm)}<p style="margin:0;font-size:20px">Tension : <strong>U = ${B.ohm.U} V</strong></p>
+          <div class="ligne"><span style="font-size:18px">Intensité I =</span><span class="afficheur" style="font-size:34px;min-width:120px">${(B.ok.E ? String(B.ohm.I) : B.saisieOhm) || "___"}</span><span style="font-size:18px">mA</span></div>
+          ${B.ok.E ? "" : paveHTML("ohm")}</section>` : "";
     return `<div class="boitier-entete"><div class="brand"><span class="etiquette" style="color:rgba(255,252,247,.7)">Système de sécurité</span><span class="titre" style="color:#fff">PIXEL-LOCK</span></div>
         <div><div class="etiquette" style="color:rgba(255,252,247,.7)">N° de série</div><div class="afficheur">${B.lettres} ${B.chiffres}</div></div>
         <div><div class="etiquette" style="color:rgba(255,252,247,.7)">Temps restant</div><div class="chrono" id="chrono" style="color:#fff;font-size:44px">--:--</div></div>
-        <div><div class="etiquette" style="color:rgba(255,252,247,.7)">Erreurs</div><div class="chrono" id="bErreurs" style="color:#fff;font-size:44px">${B.erreurs}</div></div>
+        <div><div class="etiquette" style="color:rgba(255,252,247,.7)">Erreurs</div><div class="chrono" id="bErreurs" style="color:#fff;font-size:44px">${texteErreurs()}</div></div>
+        ${B.expert ? `<span class="phase-pill" style="background:var(--rouge);color:#fff">EXPERT</span>` : ""}
         <div class="spacer" style="flex:1"></div>
         ${!B.chrono.debut ? `<button class="btn" data-a="boitierDemarrer">Démarrer</button>` : ""}
         <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="boitierMenu">Animateur</button>
       </div>
-      <main class="boitier">
+      <main class="boitier ${B.expert ? "expert" : ""}">
         <section class="module ${B.ok.A ? "resolu" : ""}"><h3><span class="led ${B.ok.A ? "ok" : ""}"></span>Module A · Les fils</h3><p style="margin:0;opacity:.75;font-size:15px">Touchez un fil pour le débrancher.</p><div class="fils">${fils}</div></section>
         <section class="module ${B.ok.B ? "resolu" : ""}"><h3><span class="led ${B.ok.B ? "ok" : ""}"></span>Module B · Le bouton</h3>
           <button class="gros-bouton" id="grosBouton" style="background:${BOUTONS[B.bouton]}" ${B.ok.B ? "disabled" : ""}>APPUYER</button>
           <div class="jauge"><div id="jaugeB"></div></div></section>
         <section class="module ${B.ok.C ? "resolu" : ""}"><h3><span class="led ${B.ok.C ? "ok" : ""}"></span>Module C · La séquence</h3>
           <div class="simon">${simon}</div><div class="ligne"><button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="voirSequence" ${B.ok.C ? "disabled" : ""}>Voir la séquence</button><div class="puces" style="color:#fff">${progC}</div></div></section>
-        <section class="module ${B.ok.D ? "resolu" : ""} ${dFerme ? "ferme" : ""}"><h3><span class="led ${B.ok.D ? "ok" : ""}"></span>Module D · Le code final</h3>
+        ${moduleE}
+        <section class="module module-d ${B.ok.D ? "resolu" : ""} ${dFerme ? "ferme" : ""}"><h3><span class="led ${B.ok.D ? "ok" : ""}"></span>Module D · Le code final</h3>
           <div class="afficheur" style="font-size:44px">${(B.code + "____").slice(0, 4).split("").join(" ")}</div>${paveHTML("boitier")}</section>
       </main>`;
   }
@@ -844,10 +904,12 @@
         return `<div class="entete"><h2>Boîtier · animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
           <div class="carte pile"><div><strong>Module A :</strong> débrancher le fil n° ${filAttendu() + 1} (${f})</div>
           <div><strong>Module B :</strong> ${{ bref: "un appui bref", long: "maintenir jusqu'à la jauge pleine (2 s)", double: "deux appuis brefs" }[boutonAttendu()]} (bouton ${B.bouton})</div>
-          <div><strong>Module C :</strong> ${sequenceAttendue().join(", ")} (séquence ${B.sequence.join(", ")}, ${voyelle() ? "avec" : "sans"} voyelle)</div>
+          <div><strong>Module C :</strong> ${sequenceAttendue().join(", ")} (séquence ${B.sequence.join(", ")}, ${voyelle() ? "avec" : "sans"} voyelle${B.expert ? `, ${B.strikes || 0} erreur(s) : la réponse change à chaque erreur` : ""})</div>
+          ${B.expert ? `<div><strong>Module E :</strong> ${B.ohm.I} mA (R = ${B.ohm.R} Ω : ${ORDRE_BANDES[B.ohm.d1]}, ${ORDRE_BANDES[B.ohm.d2]}, ${ORDRE_BANDES[B.ohm.m]} ; U = ${B.ohm.U} V ; I = U / R)</div>` : ""}
           <div><strong>Module D :</strong> ${codeAttendu()}</div></div>
           <div class="champ mt"><label>Cachette de PIXEL affichée à l'ouverture (vide = texte par défaut)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(R().cachette)}" data-set="txt" data-k="cachette"></div>
-          <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>`;
+          <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>
+          <div class="ligne mt"><span class="douce" style="flex:1">Niveau du boîtier : <strong>${B.expert ? "Expert (5 modules, 3 erreurs max)" : "Découverte"}</strong></span><button class="btn contour petit" data-a="niveauBoitier">Passer en ${B.expert ? "Découverte" : "Expert"}</button></div>`;
       }
     };
   }
@@ -873,6 +935,13 @@
       demander("Tout effacer sur cette tablette ?", "Partie, boîtier et réglages repartent de zéro, comme à la première installation : la cachette et les codes modifiés seront aussi effacés. Le code animateur redevient celui d'origine.", "Continuer", () =>
         avecCode(() => { try { Object.keys(localStorage).filter(k => k.startsWith("pixel-gm:")).forEach(k => localStorage.removeItem(k)); } catch (e) {} store.partie = null; recharger(true); }, true));
     },
+    niveau(d) {
+      const r = R(); if (r.niveau === d.v) return;
+      r.niveau = d.v; r.codes = {}; r.dureeFinale = d.v === "expert" ? 6 : S.dureeFinale;
+      save(); B = nouveauBoitier(); saveB(); rendre();
+      toast(d.v === "expert" ? "Niveau Expert : finale de 6 minutes, nouvelle combinaison du boîtier." : "Niveau Découverte : finale de 10 minutes.");
+    },
+    niveauBoitier() { actions.niveau({ v: expert() ? "decouverte" : "expert" }); fermer(); },
     resetReglages() { demander("Revenir aux réglages d'origine ?", "Équipes, durées, énigmes cochées et codes reprennent leurs valeurs par défaut.", "Réinitialiser", () => { store.reglages = reglagesParDefaut(); save(); rendre(); }); },
     nbEquipes(d) { R().nbEquipes = Math.max(2, Math.min(6, R().nbEquipes + Number(d.d))); save(); rendre(); },
     animateur() { avecCode(() => ouvrir(fenetreAnimateur())); },
@@ -888,6 +957,7 @@
     },
     pave(d) {
       if (d.cible === "boitier") return toucheBoitier(d.k);
+      if (d.cible === "ohm") return toucheOhm(d.k);
       if (modal && modal.touche) modal.touche(d.k);
     },
     onglet(d) { modal.onglet = d.o; modal.choix = null; modal.confirme = false; rendreModal(); },
@@ -959,12 +1029,23 @@
   };
 
   function toucheBoitier(k) {
-    if (!(B.ok.A && B.ok.B && B.ok.C) || B.ok.D) return;
+    if (!(B.ok.A && B.ok.B && B.ok.C && B.ok.E) || B.ok.D) return;
     if (k === "eff") B.code = B.code.slice(0, -1);
     else if (k === "ok") {
       if (B.code === codeAttendu()) { moduleOK("D"); return; }
       B.code = ""; saveB(); erreurBoitier("Code refusé : −30 secondes"); rendre(); return;
     } else if (B.code.length < 4) { B.code += k; son("tic"); }
+    saveB(); rendre();
+  }
+
+  function toucheOhm(k) {
+    if (B.ok.E || B.ouvertA) return;
+    if (!B.chrono.debut) B.chrono.debut = now();
+    if (k === "eff") B.saisieOhm = B.saisieOhm.slice(0, -1);
+    else if (k === "ok") {
+      if (Number(B.saisieOhm) === B.ohm.I) { B.saisieOhm = ""; moduleOK("E"); return; }
+      B.saisieOhm = ""; saveB(); erreurBoitier("Mauvaise intensité : −30 secondes"); rendre(); return;
+    } else if (B.saisieOhm.length < 3) { B.saisieOhm += k; son("tic"); }
     saveB(); rendre();
   }
 
@@ -988,7 +1069,7 @@
     if (t === "equipe") r.equipes[Number(el.dataset.i)].nom = el.value.trim() || ("Équipe " + couleur(r.equipes[Number(el.dataset.i)].couleur).nom);
     else if (t === "num") { const v = parseInt(el.value, 10); if (!isNaN(v)) r[el.dataset.k] = Math.max(Number(el.min || 0), Math.min(Number(el.max || 999), v)); }
     else if (t === "txt") r[el.dataset.k] = el.value.trim();
-    else if (t === "code") { const v = el.value.replace(/\D/g, "").slice(0, 4); const e = enigme(el.dataset.id); if (v === e.code) delete r.codes[e.id]; else r.codes[e.id] = v; }
+    else if (t === "code") { const v = el.value.replace(/\D/g, "").slice(0, 4); const e = enigme(el.dataset.id); if (v === codeBase(e)) delete r.codes[e.id]; else r.codes[e.id] = v; }
     else if (t === "active") { const id = el.dataset.id; r.actives = el.checked ? S.enigmes.filter(e => r.actives.includes(e.id) || e.id === id).map(e => e.id) : r.actives.filter(x => x !== id); }
     save();
     if (t === "active" || t === "num") rendre();

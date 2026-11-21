@@ -67,24 +67,36 @@ window.SCENARIO = {
       id: "E1", indice: 2, nom: "Le code des résistances", domaine: "Électronique", code: "4216", minutes: 6, reference: true,
       coups: ["Chaque couleur vaut un chiffre.", "La 1re bande est celle collée au bord, à l'opposé de la bande dorée."],
       solution: "Premières bandes de R1 à R4 : jaune (4), rouge (2), marron (1), bleu (6). Code 4216.",
+      expert: { code: "5600",
+        coups: ["Lisez chaque valeur en entier : 1re et 2e bande = deux chiffres, 3e bande = le nombre de zéros (pour 5 bandes : trois chiffres, puis la 4e bande). R1 = 4 700 Ω.", "R2 et R4 en série : 9 000 Ω. En parallèle avec R3 : 1/R = 1/9000 + 1/1000, donc 900 Ω. Il reste à ajouter R1."],
+        solution: "R1 = 4 700 Ω, R2 = 2 200 Ω, R3 = 1 000 Ω, R4 = 6 800 Ω. R2 + R4 = 9 000 Ω ; en parallèle avec R3 : 900 Ω ; plus R1 en série : 5 600 Ω. Code 5600." },
       debrief: { fait: "Tu as lu la valeur d'un composant électronique.", isen: "C'est le premier geste de l'électronique, qu'on pratique dès le cycle préparatoire." }
     },
     {
       id: "E2", indice: 4, nom: "La machine à prédire", domaine: "Intelligence artificielle", code: "3856", minutes: 8, reference: true,
       coups: ["Comparez bien les pourcentages : c'est souvent serré, et PIXEL-IA prend toujours le plus haut. Arrêtez-vous au mot FIN.", "La phrase commence par : LE CODE DU SERVEUR EST…"],
       solution: "LE CODE DU SERVEUR EST TROIS HUIT CINQ SIX FIN. Code 3856.",
+      expert: { code: "3856",
+        coups: ["La mémoire est en deux tomes (JOUR et NUIT) : pour chaque mot suivant, additionnez ses deux nombres, puis prenez le plus grand total. Un seul tome peut tromper.", "Après DU : SERVEUR 24 + 12 = 36 contre FABLAB 11 + 22 = 33. La phrase commence par LE CODE DU SERVEUR EST…"],
+        solution: "Totaux JOUR + NUIT : LE CODE DU SERVEUR EST TROIS HUIT CINQ SIX FIN. Code 3856." },
       debrief: { fait: "Tu as fait parler une IA mot par mot, exactement comme ChatGPT.", isen: "Une IA générative ne comprend pas ce qu'elle écrit : elle prédit le mot le plus probable. Si un mauvais mot passe devant, elle continue avec aplomb : c'est une hallucination. À l'ISEN, on apprend à construire ces modèles et à vérifier ce qu'ils disent." }
     },
     {
       id: "E3", indice: 3, nom: "Le disque de César", domaine: "Cybersécurité", code: "7209", minutes: 8, reference: true,
       coups: ["La mascotte s'appelle PIXEL. Compte ses lettres.", "Aligne le A extérieur sur le F intérieur."],
       solution: "Clé 5 (PIXEL = 5 lettres). XJUY IJZC EJWT SJZK = SEPT DEUX ZERO NEUF. Code 7209.",
+      expert: { code: "7209",
+        coups: ["La clé est un mot : PIXEL. Chaque lettre du message a son propre décalage : la 1re avec P, la 2e avec I, la 3e avec X, puis E, L, et on recommence à P. Les espaces ne comptent pas.", "Pour la lettre n° 1 : mettez le P de la roue intérieure sous le A, cherchez H sur la roue intérieure, lisez au-dessus : S. Puis réglez le disque sur I pour la 2e lettre…"],
+        solution: "Clé PIXEL, une lettre de clé par lettre du message : HMMX OTCU DPGW KIFU = SEPT DEUX ZERO NEUF. Code 7209." },
       debrief: { fait: "Tu as cassé un chiffrement vieux de 2000 ans.", isen: "En cybersécurité, on apprend pourquoi les chiffrements modernes, eux, ne se cassent pas." }
     },
     {
       id: "E4", indice: 1, nom: "Le journal binaire", domaine: "Informatique", code: "1306", minutes: 8, reference: true,
       coups: ["Lis la carte « Comment lire un nombre binaire » : prends le jeu HEURE pour l'heure et le jeu MINUTE pour les minutes, retourne côté points sous chaque 1, et compte les points.", "10111 en heures, ça fait 23. Attention : deux lignes ont cette heure-là, vérifie aussi les minutes."],
       solution: "Ligne 4 : 10111 = 16 + 4 + 2 + 1 = 23 et 101111 = 32 + 8 + 4 + 2 + 1 = 47, donc 23h47. Son code de session : 1306.",
+      expert: { code: "1306",
+        coups: ["Les minutes sont en hexadécimal : 2F = 2 × 16 + 15 = 47. Deux lignes annoncent 23h47 : l'une a été falsifiée.", "Bit de contrôle : comptez les 1 de l'heure (binaire) et des minutes (chaque chiffre hexa = 4 bits, F = 1111). Si le total est impair, P doit valoir 1. La ligne dont P ne colle pas est la fausse."],
+        solution: "Lignes 23h47 : 10111 (quatre 1) et 2F = 0010 1111 (cinq 1), total 9, impair, donc P = 1. La ligne avec P = 1 est la vraie : code de session 1306. L'autre (P = 0, code 4721) est falsifiée." },
       debrief: { fait: "Tu as lu l'heure en binaire dans la mémoire d'une machine.", isen: "Tout ce que manipule un ordinateur s'écrit en 0 et en 1, de l'heure d'un badge à une photo." }
     },
     {
@@ -135,6 +147,7 @@ window.SCENARIO = {
     { id: "B", nom: "Le bouton" },
     { id: "C", nom: "La séquence" },
     { id: "D", nom: "Le code final" },
+    { id: "E", nom: "Le courant (Expert)" },
     { id: "S", nom: "Numéro de série" }
   ],
 
