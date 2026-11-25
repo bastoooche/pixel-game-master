@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.3.1";
+  const VERSION_APP = "v2.3.2";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -1203,12 +1203,13 @@
   const auj = () => new Date().toISOString().slice(0, 10);
   if (FO.jour !== auj()) { FO.jour = auj(); FO.resultats = []; FO.groupe = 1; }
   const varianteF = () => S.forum.variantes[FO.v % S.forum.variantes.length];
+  const lettreF = i => (FO.niveau === "defi" ? "IJKLMNOP" : "ABCDEFGH")[i % 8];
   const codeForum = v => "" + v.r + MOTS[v.mot] + v.bin;
   const resteForum = () => FO.duree * 60000 - (now() - FO.debut);
   function forumLancer() { Object.assign(FO, { phase: "jeu", debut: now(), fin: 0, saisie: "", essais: 0, dernier: null }); saveForum(); son("tic"); garderEcranAllume(); rendre(); }
   function forumFinir(gagne) {
     FO.phase = gagne ? "gagne" : "perdu"; FO.fin = now();
-    FO.resultats.push({ groupe: FO.groupe, niveau: FO.niveau, v: varianteF().id, ms: gagne ? FO.fin - FO.debut : null, essais: FO.essais });
+    FO.resultats.push({ groupe: FO.groupe, niveau: FO.niveau, v: lettreF(FO.v), ms: gagne ? FO.fin - FO.debut : null, essais: FO.essais });
     saveForum(); son(gagne ? "fin" : "alarme"); rendre();
   }
   function forumSuivant() { FO.v = (FO.v + 1) % S.forum.variantes.length; FO.groupe++; Object.assign(FO, { phase: "pret", saisie: "", essais: 0, dernier: null }); saveForum(); rendre(); }
@@ -1245,7 +1246,7 @@
   }
   function vueForum() {
     const v = varianteF(), ms = S.forum.missions, nbV = S.forum.variantes.length;
-    const suivante = S.forum.variantes[(FO.v + 1) % nbV].id;
+    const suivante = lettreF(FO.v + 1);
     const tete = `<header class="topbar"><div class="brand"><span class="etiquette">ISEN Méditerranée · Fablab · Mode Forum</span><span class="titre">Libérez PIXEL</span></div><div class="spacer"></div>
       ${FO.phase === "jeu" ? `<div class="chrono" id="chrono">${fmt(Math.max(0, resteForum()))}</div>` : `<span class="phase-pill">${esc(NIV_F[FO.niveau].nom)} · Groupe ${FO.groupe}</span>`}
       <button class="icon-btn" data-a="forumMenu" aria-label="Menu animateur" title="Menu animateur">⚙</button>
@@ -1256,7 +1257,7 @@
       return tete + `<main class="page fo"><div class="fo-pret">
         <img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL">
         <h1>${esc(S.forum.pitch)}</h1>${missions}${choixNiveauForum()}
-        <div class="fo-prep"><span class="etiquette">Animateur</span> Sur les tables : les <b>3 cartes ${esc(NIV_F[FO.niveau].nom)} ${esc(v.id)}</b>${FO.resultats.length ? ` · groupes du jour : ${FO.resultats.length}` : ""}${top ? ` · record : ${tempsLisible(top.ms)}` : ""}</div>
+        <div class="fo-prep"><span class="etiquette">Animateur</span> Sur les tables : les <b>3 cartes ${esc(NIV_F[FO.niveau].nom)} ${esc(lettreF(FO.v))}</b>${FO.resultats.length ? ` · groupes du jour : ${FO.resultats.length}` : ""}${top ? ` · record : ${tempsLisible(top.ms)}` : ""}</div>
         <button class="btn fo-go" data-a="forumLancer">C'est parti : ${FO.duree} minutes</button></div></main>`;
     }
     if (FO.phase === "jeu") {
@@ -1283,11 +1284,11 @@
     ouvrir({ large: true, rendu: () => {
       const vs = S.forum.variantes;
       return `<div class="entete"><h2>Mode Forum · animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
-        <p>Groupe ${FO.groupe} · cartes <b>${esc(varianteF().id)}</b> · code <b>${codeForum(varianteF())}</b></p>
+        <p>Groupe ${FO.groupe} · cartes <b>${esc(lettreF(FO.v))}</b> · code <b>${codeForum(varianteF())}</b></p>
         <div class="champ"><label>Niveau (change aussi le classement affiché)</label>${choixNiveauForum()}</div>
         <div class="champ"><label>Durée d'une session</label><div class="ligne">${[6, 8, 10].map(m => `<button class="btn ${FO.duree === m ? "" : "contour"}" data-a="forumDuree" data-m="${m}">${m} min</button>`).join("")}</div></div>
-        <div class="champ"><label>Cartes du prochain groupe</label><div class="ligne">${vs.map((x, i) => `<button class="btn ${i === FO.v ? "" : "contour"}" data-a="forumVariante" data-i="${i}" style="min-width:56px">${x.id}</button>`).join("")}</div></div>
-        <table class="fo-codes"><tr>${vs.map(x => `<th>${x.id}</th>`).join("")}</tr><tr>${vs.map(x => `<td>${codeForum(x)}</td>`).join("")}</tr></table>
+        <div class="champ"><label>Cartes du prochain groupe</label><div class="ligne">${vs.map((x, i) => `<button class="btn ${i === FO.v ? "" : "contour"}" data-a="forumVariante" data-i="${i}" style="min-width:56px">${lettreF(i)}</button>`).join("")}</div></div>
+        <table class="fo-codes"><tr>${vs.map((x, i) => `<th>${lettreF(i)}</th>`).join("")}</tr><tr>${vs.map(x => `<td>${codeForum(x)}</td>`).join("")}</tr></table>
         <div class="ligne mt">${FO.phase === "jeu" ? `<button class="btn contour" data-a="forumAbandon">Arrêter ce groupe</button>` : ""}
           <button class="btn contour" data-a="forumRazJour">Effacer les temps du jour</button>
           <button class="btn bleu" data-a="forumQuitter">Quitter le mode Forum</button></div>`;
