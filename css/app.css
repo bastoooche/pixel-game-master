@@ -303,3 +303,8 @@ table.rotation td, table.rotation th { font-size: 16px; }
 .fo-codes { border-collapse: collapse; margin-top: 14px; width: 100%; }
 .fo-codes th, .fo-codes td { border: 1px solid var(--filet-leger); padding: 6px; text-align: center; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { .fo-jeu, .fo-fin { grid-template-columns: 1fr; } }
+.fo-niveaux { display: flex; gap: 12px; justify-content: center; margin: 0 0 16px; }
+.fo-niv { border: 2px solid var(--filet-leger); background: #fff; border-radius: var(--r-md); padding: 10px 22px; display: flex; flex-direction: column; align-items: center; min-width: 200px; }
+.fo-niv strong { font-size: 20px; color: var(--encre); } .fo-niv span { font-size: 14px; color: var(--encre-douce); }
+.fo-niv.actif { border-color: var(--bleu); background: var(--bleu); } .fo-niv.actif strong, .fo-niv.actif span { color: #fff; }
+.fenetre .fo-niveaux { justify-content: flex-start; }

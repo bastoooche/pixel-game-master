@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.3.0";
+  const VERSION_APP = "v2.3.1";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -361,7 +361,7 @@
           ${enigme("E9") && !enigme("E9").veille ? `<button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>La chaîne humaine</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>` : ""}
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
-        ${S.forum ? `<button class="tuile-menu" data-a="aller" data-v="forum"><span class="etiquette">Salon, forum, JPO · ${FO.duree} min</span><strong>Mode Forum</strong><span>3 missions éclair, un code à 3 chiffres, les groupes s'enchaînent.</span></button>` : ""}
+        ${S.forum ? `<button class="tuile-menu" data-a="aller" data-v="forum"><span class="etiquette">Salon, forum, JPO · ${FO.duree} min · Découverte ou Défi</span><strong>Mode Forum</strong><span>3 missions éclair, un code à 3 chiffres, les groupes s'enchaînent.</span></button>` : ""}
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
       </section></div></main>`;
   }
@@ -1006,6 +1006,7 @@
     forumLancer() { forumLancer(); },
     forumSuivant() { forumSuivant(); },
     forumMenu() { avecCode(fenetreForum); },
+    forumNiveau(d) { if (FO.phase === "jeu") return; FO.niveau = d.n; saveForum(); rendreModal(); rendre(); },
     forumDuree(d) { FO.duree = Number(d.m); saveForum(); rendreModal(); rendre(); },
     forumVariante(d) { FO.v = Number(d.i); saveForum(); rendreModal(); rendre(); },
     forumAbandon() { fermer(); forumFinir(false); },
@@ -1197,7 +1198,7 @@
   /* ------------------------------------------------------------------ */
   const LS_FORUM = "pixel-gm:forum:" + S.id;
   const MOTS = { UN: 1, DEUX: 2, TROIS: 3, QUATRE: 4, CINQ: 5, SIX: 6, SEPT: 7, HUIT: 8, NEUF: 9 };
-  const FO = Object.assign({ v: 0, phase: "pret", debut: 0, fin: 0, saisie: "", essais: 0, dernier: null, groupe: 1, duree: (S.forum || {}).duree || 8, jour: "", resultats: [] }, lire(LS_FORUM) || {});
+  const FO = Object.assign({ v: 0, phase: "pret", debut: 0, fin: 0, saisie: "", essais: 0, dernier: null, groupe: 1, niveau: "decouverte", duree: (S.forum || {}).duree || 8, jour: "", resultats: [] }, lire(LS_FORUM) || {});
   function saveForum() { if (!window.__razEnCours) ecrire(LS_FORUM, FO); }
   const auj = () => new Date().toISOString().slice(0, 10);
   if (FO.jour !== auj()) { FO.jour = auj(); FO.resultats = []; FO.groupe = 1; }
@@ -1207,7 +1208,7 @@
   function forumLancer() { Object.assign(FO, { phase: "jeu", debut: now(), fin: 0, saisie: "", essais: 0, dernier: null }); saveForum(); son("tic"); garderEcranAllume(); rendre(); }
   function forumFinir(gagne) {
     FO.phase = gagne ? "gagne" : "perdu"; FO.fin = now();
-    FO.resultats.push({ groupe: FO.groupe, v: varianteF().id, ms: gagne ? FO.fin - FO.debut : null, essais: FO.essais });
+    FO.resultats.push({ groupe: FO.groupe, niveau: FO.niveau, v: varianteF().id, ms: gagne ? FO.fin - FO.debut : null, essais: FO.essais });
     saveForum(); son(gagne ? "fin" : "alarme"); rendre();
   }
   function forumSuivant() { FO.v = (FO.v + 1) % S.forum.variantes.length; FO.groupe++; Object.assign(FO, { phase: "pret", saisie: "", essais: 0, dernier: null }); saveForum(); rendre(); }
@@ -1232,9 +1233,11 @@
     return `<div class="fo-cases">${ms.map((m, i) => `<div class="fo-case ${i === FO.saisie.length ? "active" : ""}" style="--c:${m.couleur}"><span class="n">${m.n}</span><b>${esc(FO.saisie[i] || "")}</b></div>`).join("")}</div>`;
   }
   function classementForum() {
-    const ok = FO.resultats.filter(r => r.ms != null).sort((a, b) => a.ms - b.ms);
+    const ok = FO.resultats.filter(r => r.ms != null && (r.niveau || "defi") === FO.niveau).sort((a, b) => a.ms - b.ms);
     return ok;
   }
+  const NIV_F = { decouverte: { nom: "Découverte", detail: "Dès la seconde" }, defi: { nom: "Défi", detail: "Terminale scientifique" } };
+  const choixNiveauForum = () => `<div class="fo-niveaux">${Object.entries(NIV_F).map(([k, n]) => `<button class="fo-niv ${FO.niveau === k ? "actif" : ""}" data-a="forumNiveau" data-n="${k}"><strong>${n.nom}</strong><span>${n.detail}</span></button>`).join("")}</div>`;
   function tempsLisible(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0"); }
   function qrForum() {
     if (!R().lienFin || !window.qrcode) return "";
@@ -1244,7 +1247,7 @@
     const v = varianteF(), ms = S.forum.missions, nbV = S.forum.variantes.length;
     const suivante = S.forum.variantes[(FO.v + 1) % nbV].id;
     const tete = `<header class="topbar"><div class="brand"><span class="etiquette">ISEN Méditerranée · Fablab · Mode Forum</span><span class="titre">Libérez PIXEL</span></div><div class="spacer"></div>
-      ${FO.phase === "jeu" ? `<div class="chrono" id="chrono">${fmt(Math.max(0, resteForum()))}</div>` : `<span class="phase-pill">Groupe ${FO.groupe}</span>`}
+      ${FO.phase === "jeu" ? `<div class="chrono" id="chrono">${fmt(Math.max(0, resteForum()))}</div>` : `<span class="phase-pill">${esc(NIV_F[FO.niveau].nom)} · Groupe ${FO.groupe}</span>`}
       <button class="icon-btn" data-a="forumMenu" aria-label="Menu animateur" title="Menu animateur">⚙</button>
       <button class="icon-btn" data-a="pleinecran" aria-label="Plein écran" title="Plein écran">⤢</button></header>`;
     const missions = `<div class="fo-missions">${ms.map(m => `<div class="fo-mission" style="--c:${m.couleur}"><span class="n">${m.n}</span><div><strong>${esc(m.nom)}</strong><span>${esc(m.domaine)}</span></div></div>`).join("")}</div>`;
@@ -1252,8 +1255,8 @@
       const top = classementForum()[0];
       return tete + `<main class="page fo"><div class="fo-pret">
         <img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL">
-        <h1>${esc(S.forum.pitch)}</h1>${missions}
-        <div class="fo-prep"><span class="etiquette">Animateur</span> Sur les tables : les <b>3 cartes ${esc(v.id)}</b>${FO.resultats.length ? ` · groupes du jour : ${FO.resultats.length}` : ""}${top ? ` · record : ${tempsLisible(top.ms)}` : ""}</div>
+        <h1>${esc(S.forum.pitch)}</h1>${missions}${choixNiveauForum()}
+        <div class="fo-prep"><span class="etiquette">Animateur</span> Sur les tables : les <b>3 cartes ${esc(NIV_F[FO.niveau].nom)} ${esc(v.id)}</b>${FO.resultats.length ? ` · groupes du jour : ${FO.resultats.length}` : ""}${top ? ` · record : ${tempsLisible(top.ms)}` : ""}</div>
         <button class="btn fo-go" data-a="forumLancer">C'est parti : ${FO.duree} minutes</button></div></main>`;
     }
     if (FO.phase === "jeu") {
@@ -1262,7 +1265,7 @@
       return tete + `<main class="page fo"><div class="fo-jeu">
         <section class="fo-gauche"><img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL" style="width:170px">${missions}${retour}</section>
         <section class="fo-droite"><div id="foSaisie">${saisieForumHTML()}</div>${paveHTML("forum")}</section>
-        </div><div class="fo-prochain">Préparer ensuite : cartes ${esc(suivante)}</div></main>`;
+        </div><div class="fo-prochain">Niveau ${esc(NIV_F[FO.niveau].nom)} · préparer ensuite : cartes ${esc(suivante)}</div></main>`;
     }
     const cl = classementForum(), moi = FO.resultats[FO.resultats.length - 1];
     const rang = moi && moi.ms != null ? cl.findIndex(r => r === cl.find(x => x.groupe === moi.groupe && x.ms === moi.ms)) + 1 : 0;
@@ -1273,14 +1276,15 @@
         <h1>${gagne ? "PIXEL est libéré !" : "PIXEL s'est échappé…"}</h1>
         <p class="fo-temps">${gagne ? `En ${tempsLisible(moi.ms)}${rang ? ` · ${rang}<sup>${rang === 1 ? "er" : "e"}</sup> sur ${cl.length} aujourd'hui` : ""}` : `Le code était <b>${codeForum(v)}</b>.`}</p>
         <p>${esc(gagne ? "Électronique, cybersécurité, informatique : en quelques minutes, vous avez fait le travail d'une équipe d'ingénieurs du numérique." : "Pas grave : électronique, cybersécurité et informatique, c'est exactement ce qu'on apprend à l'ISEN.")}</p></section>
-      <section>${cl.length ? `<h2>Meilleurs temps du jour</h2><ol class="fo-podium">${podium}</ol>` : ""}${qrForum()}
-        <button class="btn bleu fo-go" data-a="forumSuivant">Groupe suivant (cartes ${esc(suivante)})</button></section></div></main>`;
+      <section>${cl.length ? `<h2>Meilleurs temps du jour · ${esc(NIV_F[FO.niveau].nom)}</h2><ol class="fo-podium">${podium}</ol>` : ""}${qrForum()}
+        <button class="btn bleu fo-go" data-a="forumSuivant">Groupe suivant (cartes ${esc(NIV_F[FO.niveau].nom)} ${esc(suivante)})</button></section></div></main>`;
   }
   function fenetreForum() {
     ouvrir({ large: true, rendu: () => {
       const vs = S.forum.variantes;
       return `<div class="entete"><h2>Mode Forum · animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
         <p>Groupe ${FO.groupe} · cartes <b>${esc(varianteF().id)}</b> · code <b>${codeForum(varianteF())}</b></p>
+        <div class="champ"><label>Niveau (change aussi le classement affiché)</label>${choixNiveauForum()}</div>
         <div class="champ"><label>Durée d'une session</label><div class="ligne">${[6, 8, 10].map(m => `<button class="btn ${FO.duree === m ? "" : "contour"}" data-a="forumDuree" data-m="${m}">${m} min</button>`).join("")}</div></div>
         <div class="champ"><label>Cartes du prochain groupe</label><div class="ligne">${vs.map((x, i) => `<button class="btn ${i === FO.v ? "" : "contour"}" data-a="forumVariante" data-i="${i}" style="min-width:56px">${x.id}</button>`).join("")}</div></div>
         <table class="fo-codes"><tr>${vs.map(x => `<th>${x.id}</th>`).join("")}</tr><tr>${vs.map(x => `<td>${codeForum(x)}</td>`).join("")}</tr></table>
