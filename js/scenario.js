@@ -151,5 +151,27 @@ window.SCENARIO = {
     { id: "S", nom: "Numéro de série" }
   ],
 
+  // Mode Forum : 3 missions éclair, code à 3 chiffres, une variante de cartes par groupe
+  forum: {
+    duree: 8,
+    pitch: "PIXEL s'est enfermé dans le système du Fablab. Trois missions, trois chiffres : vous avez 8 minutes pour le libérer.",
+    missions: [
+      { n: 1, nom: "Le composant", domaine: "Électronique", couleur: "#E30613" },
+      { n: 2, nom: "Le message secret", domaine: "Cybersécurité", couleur: "#003879" },
+      { n: 3, nom: "Les lampes", domaine: "Informatique", couleur: "#6AB87E" }
+    ],
+    // r = valeur de la résistance en kΩ ; cesar = mot chiffré (mot, décalage) ; bits = 4 lampes
+    variantes: [
+      { id: "A", r: 4, mot: "SEPT", cle: 3, bin: 2 },
+      { id: "B", r: 6, mot: "TROIS", cle: 5, bin: 9 },
+      { id: "C", r: 2, mot: "HUIT", cle: 4, bin: 5 },
+      { id: "D", r: 7, mot: "UN", cle: 7, bin: 6 },
+      { id: "E", r: 3, mot: "NEUF", cle: 2, bin: 4 },
+      { id: "F", r: 5, mot: "DEUX", cle: 6, bin: 8 },
+      { id: "G", r: 9, mot: "SIX", cle: 3, bin: 3 },
+      { id: "H", r: 8, mot: "QUATRE", cle: 5, bin: 1 }
+    ]
+  },
+
   messageFinal: "Tu viens de faire de l'électronique, de l'intelligence artificielle, de la cybersécurité et de l'informatique en une heure. C'est ça, être ingénieur du numérique."
 };

@@ -266,3 +266,40 @@ table.rotation td, table.rotation th { font-size: 16px; }
 .st-code { display: flex; align-items: center; gap: 12px; }
 .st-chiffre { width: 70px; height: 86px; border-radius: 14px; border: 3px solid rgba(255,252,247,.3); display: inline-flex; align-items: center; justify-content: center; font-size: 54px; font-weight: 800; }
 .st-chiffre.ok { background: #fff; color: var(--encre); border-color: #fff; }
+
+/* ---------- Mode Forum ---------- */
+.fo { display: flex; flex-direction: column; }
+.fo h1 { font-size: 34px; line-height: 1.2; color: var(--bleu); margin: 8px 0 20px; }
+.fo-pret { max-width: 980px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.fo-pret .mascotte-ouvert { width: 190px; }
+.fo-missions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 6px 0 18px; }
+.fo-mission { display: flex; align-items: center; gap: 12px; background: #fff; border: 3px solid var(--c); border-radius: var(--r-md); padding: 10px 18px 10px 10px; text-align: left; }
+.fo-mission .n, .fo-case .n { width: 40px; height: 40px; border-radius: 50%; background: var(--c); color: #fff; font-weight: 800; font-size: 22px; display: flex; align-items: center; justify-content: center; flex: none; }
+.fo-mission strong { display: block; font-size: 20px; } .fo-mission span { font-size: 14px; color: var(--encre-douce); }
+.fo-prep { background: var(--beige); border-radius: var(--pill); padding: 10px 22px; font-size: 17px; margin-bottom: 18px; }
+.fo-prep .etiquette { margin-right: 8px; }
+.btn.fo-go { font-size: 26px; padding: 20px 44px; }
+.fo-jeu { display: grid; grid-template-columns: 1fr 460px; gap: 32px; align-items: center; flex: 1; }
+.fo-gauche { text-align: center; }
+.fo-gauche .fo-missions { flex-direction: column; align-items: stretch; max-width: 420px; margin: 10px auto; }
+.fo-retour { font-size: 20px; font-weight: 600; color: var(--rouge); max-width: 460px; margin: 10px auto 0; }
+.fo-retour.neutre { color: var(--encre-douce); font-weight: 400; }
+.fo-cases { display: flex; gap: 14px; justify-content: center; margin-bottom: 20px; }
+.fo-case { position: relative; width: 104px; height: 124px; border-radius: var(--r-md); background: #fff; border: 4px solid var(--c); display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 800; color: var(--encre); }
+.fo-case .n { position: absolute; top: -18px; left: -14px; width: 34px; height: 34px; font-size: 18px; }
+.fo-case.active { box-shadow: 0 0 0 5px rgba(0,56,121,.18); }
+.fo-prochain { text-align: right; font-size: 13px; color: var(--encre-douce); margin-top: 10px; }
+.fo-fin { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; flex: 1; }
+.fo-fin h1 { font-size: 52px; color: var(--rouge); margin: 10px 0; }
+.fo-fin.perdu h1 { color: var(--bleu); }
+.fo-temps { font-size: 28px; font-weight: 800; color: var(--bleu); margin: 0 0 12px; }
+.fo-fin p { font-size: 20px; }
+.fo-podium { list-style: none; padding: 0; margin: 0 0 18px; }
+.fo-podium li { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-radius: var(--r-md); font-size: 20px; }
+.fo-podium li span { width: 34px; height: 34px; border-radius: 50%; background: var(--beige); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.fo-podium li b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.fo-podium li.moi { background: #fde8ea; }
+.fo-qr { width: 150px; margin: 0 0 18px; }
+.fo-codes { border-collapse: collapse; margin-top: 14px; width: 100%; }
+.fo-codes th, .fo-codes td { border: 1px solid var(--filet-leger); padding: 6px; text-align: center; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .fo-jeu, .fo-fin { grid-template-columns: 1fr; } }

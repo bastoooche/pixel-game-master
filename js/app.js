@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.2.0";
+  const VERSION_APP = "v2.3.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -330,9 +330,10 @@
     else if (v === "jeu" && P()) app.innerHTML = vueJeu();
     else if (v === "station") app.innerHTML = vueStation();
     else if (v === "boitier") app.innerHTML = vueBoitier();
+    else if (v === "forum" && S.forum) app.innerHTML = vueForum();
     else app.innerHTML = vueAccueil();
     if (v === "jeu" && P() && ["enquete", "finale"].includes(P().phase)) garderEcranAllume();
-    if (v === "station" || v === "boitier") garderEcranAllume();
+    if (v === "station" || v === "boitier" || v === "forum") garderEcranAllume();
     tic();
   }
 
@@ -360,6 +361,7 @@
           ${enigme("E9") && !enigme("E9").veille ? `<button class="tuile-menu" data-a="aller" data-v="station"><span class="etiquette">2e tablette · Énigme en plus E9</span><strong>La chaîne humaine</strong><span>Si tu ajoutes E9 : Makey Makey branché en USB.</span></button>` : ""}
           <button class="tuile-menu" data-a="aller" data-v="boitier"><span class="etiquette">2e tablette · Finale</span><strong>Boîtier virtuel</strong><span>Le système de sécurité PIXEL-LOCK.</span></button>
         </div>
+        ${S.forum ? `<button class="tuile-menu" data-a="aller" data-v="forum"><span class="etiquette">Salon, forum, JPO · ${FO.duree} min</span><strong>Mode Forum</strong><span>3 missions éclair, un code à 3 chiffres, les groupes s'enchaînent.</span></button>` : ""}
         <button class="tuile-menu" data-a="reglages"><span class="etiquette">Animateur</span><strong>Réglages</strong><span>Équipes, durées, énigmes, codes, QR code de fin.</span></button>
       </section></div></main>`;
   }
@@ -1001,6 +1003,14 @@
     pleinecran() { pleinEcran(); },
     aller(d) { fermer(); aller(d.v); },
     reglages() { avecCode(() => aller("reglages")); },
+    forumLancer() { forumLancer(); },
+    forumSuivant() { forumSuivant(); },
+    forumMenu() { avecCode(fenetreForum); },
+    forumDuree(d) { FO.duree = Number(d.m); saveForum(); rendreModal(); rendre(); },
+    forumVariante(d) { FO.v = Number(d.i); saveForum(); rendreModal(); rendre(); },
+    forumAbandon() { fermer(); forumFinir(false); },
+    forumRazJour() { demander("Effacer les temps du jour ?", "Le classement du jour et le compteur de groupes repartent de zéro.", "Effacer", () => { FO.resultats = []; FO.groupe = 1; saveForum(); rendre(); }); },
+    forumQuitter() { fermer(); aller("accueil"); },
     nouvelle() { avecCode(() => { if (P() && P().phase !== "revelation") demander("Une partie est en cours", "La lancer à nouveau effacera la partie en cours au moment du lancement.", "Continuer vers les réglages", () => aller("reglages")); else aller("reglages"); }); },
     lancerPartie() { if (!verifCodes()) return; nouvellePartie(); },
     razPartie() {
@@ -1048,6 +1058,7 @@
     pave(d) {
       if (d.cible === "boitier") return toucheBoitier(d.k);
       if (d.cible === "ohm") return toucheOhm(d.k);
+      if (d.cible === "forum") return toucheForum(d.k);
       if (modal && modal.touche) modal.touche(d.k);
     },
     onglet(d) { modal.onglet = d.o; modal.choix = null; modal.confirme = false; rendreModal(); },
@@ -1172,12 +1183,112 @@
   document.addEventListener("pointercancel", () => bUp());
   document.addEventListener("keydown", ev => {
     if (vue() === "station") { if (ev.repeat) { ev.preventDefault(); return; } if (stationKey(ev.key, true)) ev.preventDefault(); return; }
+    if (vue() === "forum" && !modal) { if (/^[0-9]$/.test(ev.key)) toucheForum(ev.key); else if (ev.key === "Backspace") toucheForum("eff"); else if (ev.key === "Enter") toucheForum("ok"); return; }
     if (ev.target.matches && ev.target.matches("input")) return;
     if (modal && modal.touche && /^[0-9]$/.test(ev.key)) { modal.touche(ev.key); ev.preventDefault(); }
     else if (modal && modal.touche && ev.key === "Backspace") modal.touche("eff");
     else if (modal && modal.touche && ev.key === "Enter") { modal.touche("ok"); ev.preventDefault(); }
     else if (modal && ev.key === "Escape") fermer();
   });
+
+
+  /* ------------------------------------------------------------------ */
+  /* Mode Forum : sessions éclair de 8 minutes, groupes à la chaîne      */
+  /* ------------------------------------------------------------------ */
+  const LS_FORUM = "pixel-gm:forum:" + S.id;
+  const MOTS = { UN: 1, DEUX: 2, TROIS: 3, QUATRE: 4, CINQ: 5, SIX: 6, SEPT: 7, HUIT: 8, NEUF: 9 };
+  const FO = Object.assign({ v: 0, phase: "pret", debut: 0, fin: 0, saisie: "", essais: 0, dernier: null, groupe: 1, duree: (S.forum || {}).duree || 8, jour: "", resultats: [] }, lire(LS_FORUM) || {});
+  function saveForum() { if (!window.__razEnCours) ecrire(LS_FORUM, FO); }
+  const auj = () => new Date().toISOString().slice(0, 10);
+  if (FO.jour !== auj()) { FO.jour = auj(); FO.resultats = []; FO.groupe = 1; }
+  const varianteF = () => S.forum.variantes[FO.v % S.forum.variantes.length];
+  const codeForum = v => "" + v.r + MOTS[v.mot] + v.bin;
+  const resteForum = () => FO.duree * 60000 - (now() - FO.debut);
+  function forumLancer() { Object.assign(FO, { phase: "jeu", debut: now(), fin: 0, saisie: "", essais: 0, dernier: null }); saveForum(); son("tic"); garderEcranAllume(); rendre(); }
+  function forumFinir(gagne) {
+    FO.phase = gagne ? "gagne" : "perdu"; FO.fin = now();
+    FO.resultats.push({ groupe: FO.groupe, v: varianteF().id, ms: gagne ? FO.fin - FO.debut : null, essais: FO.essais });
+    saveForum(); son(gagne ? "fin" : "alarme"); rendre();
+  }
+  function forumSuivant() { FO.v = (FO.v + 1) % S.forum.variantes.length; FO.groupe++; Object.assign(FO, { phase: "pret", saisie: "", essais: 0, dernier: null }); saveForum(); rendre(); }
+  function toucheForum(k) {
+    if (FO.phase !== "jeu") return;
+    if (k === "eff") FO.saisie = FO.saisie.slice(0, -1);
+    else if (k === "ok") { if (FO.saisie.length === 3) return validerForum(); }
+    else if (FO.saisie.length < 3) FO.saisie += k;
+    saveForum(); majSaisieForum();
+    if (FO.saisie.length === 3) setTimeout(() => { if (FO.saisie.length === 3 && FO.phase === "jeu") validerForum(); }, 250);
+  }
+  function validerForum() {
+    const bon = codeForum(varianteF());
+    FO.essais++;
+    if (FO.saisie === bon) { FO.dernier = { code: FO.saisie, ok: [true, true, true] }; return forumFinir(true); }
+    FO.dernier = { code: FO.saisie, ok: [...FO.saisie].map((c, i) => c === bon[i]) };
+    FO.saisie = ""; saveForum(); son("err"); rendre();
+  }
+  function majSaisieForum() { const z = $("#foSaisie"); if (z) z.innerHTML = saisieForumHTML(); }
+  function saisieForumHTML() {
+    const ms = S.forum.missions;
+    return `<div class="fo-cases">${ms.map((m, i) => `<div class="fo-case ${i === FO.saisie.length ? "active" : ""}" style="--c:${m.couleur}"><span class="n">${m.n}</span><b>${esc(FO.saisie[i] || "")}</b></div>`).join("")}</div>`;
+  }
+  function classementForum() {
+    const ok = FO.resultats.filter(r => r.ms != null).sort((a, b) => a.ms - b.ms);
+    return ok;
+  }
+  function tempsLisible(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0"); }
+  function qrForum() {
+    if (!R().lienFin || !window.qrcode) return "";
+    try { const q = window.qrcode(0, "M"); q.addData(R().lienFin); q.make(); return `<div class="qr fo-qr">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>`; } catch (e) { return ""; }
+  }
+  function vueForum() {
+    const v = varianteF(), ms = S.forum.missions, nbV = S.forum.variantes.length;
+    const suivante = S.forum.variantes[(FO.v + 1) % nbV].id;
+    const tete = `<header class="topbar"><div class="brand"><span class="etiquette">ISEN Méditerranée · Fablab · Mode Forum</span><span class="titre">Libérez PIXEL</span></div><div class="spacer"></div>
+      ${FO.phase === "jeu" ? `<div class="chrono" id="chrono">${fmt(Math.max(0, resteForum()))}</div>` : `<span class="phase-pill">Groupe ${FO.groupe}</span>`}
+      <button class="icon-btn" data-a="forumMenu" aria-label="Menu animateur" title="Menu animateur">⚙</button>
+      <button class="icon-btn" data-a="pleinecran" aria-label="Plein écran" title="Plein écran">⤢</button></header>`;
+    const missions = `<div class="fo-missions">${ms.map(m => `<div class="fo-mission" style="--c:${m.couleur}"><span class="n">${m.n}</span><div><strong>${esc(m.nom)}</strong><span>${esc(m.domaine)}</span></div></div>`).join("")}</div>`;
+    if (FO.phase === "pret") {
+      const top = classementForum()[0];
+      return tete + `<main class="page fo"><div class="fo-pret">
+        <img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL">
+        <h1>${esc(S.forum.pitch)}</h1>${missions}
+        <div class="fo-prep"><span class="etiquette">Animateur</span> Sur les tables : les <b>3 cartes ${esc(v.id)}</b>${FO.resultats.length ? ` · groupes du jour : ${FO.resultats.length}` : ""}${top ? ` · record : ${tempsLisible(top.ms)}` : ""}</div>
+        <button class="btn fo-go" data-a="forumLancer">C'est parti : ${FO.duree} minutes</button></div></main>`;
+    }
+    if (FO.phase === "jeu") {
+      const d = FO.dernier;
+      const retour = d ? `<div class="fo-retour">Code ${esc(d.code)} refusé. ${d.ok.some(x => x) ? "Chiffres justes : " + d.ok.map((x, i) => x ? `<b style="color:${ms[i].couleur}">${ms[i].n}</b>` : "").filter(Boolean).join(", ") + "." : "Aucun chiffre juste."}</div>` : `<div class="fo-retour neutre">Chaque mission donne un chiffre. Entrez-les dans l'ordre 1, 2, 3.</div>`;
+      return tete + `<main class="page fo"><div class="fo-jeu">
+        <section class="fo-gauche"><img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL" style="width:170px">${missions}${retour}</section>
+        <section class="fo-droite"><div id="foSaisie">${saisieForumHTML()}</div>${paveHTML("forum")}</section>
+        </div><div class="fo-prochain">Préparer ensuite : cartes ${esc(suivante)}</div></main>`;
+    }
+    const cl = classementForum(), moi = FO.resultats[FO.resultats.length - 1];
+    const rang = moi && moi.ms != null ? cl.findIndex(r => r === cl.find(x => x.groupe === moi.groupe && x.ms === moi.ms)) + 1 : 0;
+    const podium = cl.slice(0, 5).map((r, i) => `<li class="${r.groupe === moi.groupe ? "moi" : ""}"><span>${i + 1}</span>Groupe ${r.groupe}<b>${tempsLisible(r.ms)}</b></li>`).join("");
+    const gagne = FO.phase === "gagne";
+    return tete + `<main class="page fo"><div class="fo-fin ${gagne ? "" : "perdu"}">
+      <section><img class="mascotte-ouvert" src="img/pixel.png" alt="PIXEL">
+        <h1>${gagne ? "PIXEL est libéré !" : "PIXEL s'est échappé…"}</h1>
+        <p class="fo-temps">${gagne ? `En ${tempsLisible(moi.ms)}${rang ? ` · ${rang}<sup>${rang === 1 ? "er" : "e"}</sup> sur ${cl.length} aujourd'hui` : ""}` : `Le code était <b>${codeForum(v)}</b>.`}</p>
+        <p>${esc(gagne ? "Électronique, cybersécurité, informatique : en quelques minutes, vous avez fait le travail d'une équipe d'ingénieurs du numérique." : "Pas grave : électronique, cybersécurité et informatique, c'est exactement ce qu'on apprend à l'ISEN.")}</p></section>
+      <section>${cl.length ? `<h2>Meilleurs temps du jour</h2><ol class="fo-podium">${podium}</ol>` : ""}${qrForum()}
+        <button class="btn bleu fo-go" data-a="forumSuivant">Groupe suivant (cartes ${esc(suivante)})</button></section></div></main>`;
+  }
+  function fenetreForum() {
+    ouvrir({ large: true, rendu: () => {
+      const vs = S.forum.variantes;
+      return `<div class="entete"><h2>Mode Forum · animateur</h2><button class="icon-btn" data-a="fermer" aria-label="Fermer">✕</button></div>
+        <p>Groupe ${FO.groupe} · cartes <b>${esc(varianteF().id)}</b> · code <b>${codeForum(varianteF())}</b></p>
+        <div class="champ"><label>Durée d'une session</label><div class="ligne">${[6, 8, 10].map(m => `<button class="btn ${FO.duree === m ? "" : "contour"}" data-a="forumDuree" data-m="${m}">${m} min</button>`).join("")}</div></div>
+        <div class="champ"><label>Cartes du prochain groupe</label><div class="ligne">${vs.map((x, i) => `<button class="btn ${i === FO.v ? "" : "contour"}" data-a="forumVariante" data-i="${i}" style="min-width:56px">${x.id}</button>`).join("")}</div></div>
+        <table class="fo-codes"><tr>${vs.map(x => `<th>${x.id}</th>`).join("")}</tr><tr>${vs.map(x => `<td>${codeForum(x)}</td>`).join("")}</tr></table>
+        <div class="ligne mt">${FO.phase === "jeu" ? `<button class="btn contour" data-a="forumAbandon">Arrêter ce groupe</button>` : ""}
+          <button class="btn contour" data-a="forumRazJour">Effacer les temps du jour</button>
+          <button class="btn bleu" data-a="forumQuitter">Quitter le mode Forum</button></div>`;
+    } });
+  }
 
   /* ------------------------------------------------------------------ */
   /* Horloge                                                             */
@@ -1229,6 +1340,10 @@
         });
         if (relance) rendre();
       }
+    } else if (v === "forum" && FO.phase === "jeu") {
+      const r = resteForum();
+      if (el) { el.textContent = fmt(Math.max(0, r)); el.classList.toggle("alerte", r < 60000); }
+      if (r <= 0) forumFinir(false);
     } else if (v === "boitier" && el && !B.ouvertA) {
       const r = B.chrono.debut ? resteBoitier() : R().dureeFinale * 60000;
       el.textContent = r < 0 ? "Prolong." : fmt(r);
@@ -1252,5 +1367,5 @@
       document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update(); });
     }).catch(() => {}));
   }
-  window.__pixel = { store, actions, get B() { return B; }, filAttendu, boutonAttendu, sequenceAttendue, codeAttendu }; // pour les tests
+  window.__pixel = { store, actions, FO, codeForum, varianteF, get B() { return B; }, filAttendu, boutonAttendu, sequenceAttendue, codeAttendu }; // pour les tests
 })();
