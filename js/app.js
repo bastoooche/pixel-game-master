@@ -4,7 +4,7 @@
   const S = window.SCENARIO;
   const LS_KEY = "pixel-gm:" + S.id;
   const LS_BOITIER = "pixel-gm:boitier:" + S.id;
-  const VERSION_APP = "v2.3.3";
+  const VERSION_APP = "v2.5.0";
 
   const COULEURS = [
     { id: "rouge", nom: "Rouge", hex: "#E30613", texte: "#fff" },
@@ -133,10 +133,45 @@
     p.avanceMs = (p.avanceMs || 0) + rot.reste + 50;
     p.tousFinisA = null; save(); tic();
   }
+  /* Affectation des stations, tour par tour. Tour 1 : l'équipe i commence à la station i (comme l'affiche).
+     Ensuite chaque équipe passe à la station suivante… sauf si elle l'a déjà résolue (code trouvé en avance,
+     énigme faite pendant un temps libre) : on cherche alors la meilleure répartition sans doublon.
+     Chaque tour est figé dès qu'il commence ; les tours futurs ne sont qu'une prévision. */
+  function affectation(tour) {
+    const p = P(), st = stationsBase(), nE = p.equipes.length, nb = Math.max(nE, st.length);
+    p.affect = p.affect || {};
+    if (p.affect[tour]) return p.affect[tour];
+    const rot = rotation(), courant = rot ? Math.min(rot.tour, rot.nb) : 1;
+    let a;
+    if (tour <= 1) a = p.equipes.map((eq, i) => i % nb);
+    else {
+      const prec = affectation(tour - 1);
+      if (tour > courant) a = prec.map(s => (s + 1) % nb);           // prévision
+      else a = meilleureAffectation(prec, nb, st);
+    }
+    if (tour <= courant && p.enquete.debut) { p.affect[tour] = a; save(); }
+    return a;
+  }
+  function meilleureAffectation(prec, nb, st) {
+    const eqs = P().equipes, resolu = (i, s) => s < st.length && eqs[i].resolues.some(r => r.id === st[s].id);
+    const resteAFaire = i => st.some((e, s) => !resolu(i, s));
+    const cout = (i, s) => {
+      const def = (prec[i] + 1) % nb, ecart = (s - def + nb) % nb;
+      if (s >= st.length) return (resteAFaire(i) ? 50 : 0) + ecart;          // pause dossier
+      return (resolu(i, s) ? 100 : 0) + ecart;                                // déjà faite : à éviter
+    };
+    let best = null, bestC = Infinity;
+    const pris = new Array(nb).fill(false), cur = [];
+    (function chercher(i, c) {
+      if (c >= bestC) return;
+      if (i === eqs.length) { bestC = c; best = cur.slice(); return; }
+      for (let s = 0; s < nb; s++) if (!pris[s]) { pris[s] = true; cur[i] = s; chercher(i + 1, c + cout(i, s)); pris[s] = false; }
+    })(0, 0);
+    return best || prec.map(s => (s + 1) % nb);
+  }
   function stationDe(i, tour) {
-    const st = stationsBase(), nb = Math.max(P().equipes.length, st.length);
-    const k = (i + tour - 1) % nb;
-    return k < st.length ? st[k] : null;
+    const st = stationsBase(), k = affectation(tour)[i];
+    return k != null && k < st.length ? st[k] : null;
   }
   function tableauRotation() {
     const p = P(), st = stationsBase(), nb = Math.max(p.equipes.length, st.length), min = Number(R().rotationMin);
@@ -151,7 +186,7 @@
   function annoncerTour(t) {
     const p = P(), el = $("#annonce");
     if (!el) return;
-    const lignes = p.equipes.map((eq, i) => { const e = stationDe(i, t); const c = couleur(eq.couleur); return `<div class="an-l"><span class="an-p" style="background:${c.hex}"></span><strong>${esc(eq.nom)}</strong><span>→ ${e ? `<strong>${e.id}</strong> · ${esc(e.nom)}` : "pause dossier"}</span></div>`; }).join("");
+    const lignes = p.equipes.map((eq, i) => { const e = stationDe(i, t); const c = couleur(eq.couleur); const deja = e && eq.resolues.some(r => r.id === e.id); return `<div class="an-l"><span class="an-p" style="background:${c.hex}"></span><strong>${esc(eq.nom)}</strong><span>→ ${e ? `<strong>${e.id}</strong> · ${esc(e.nom)}${deja ? " <em>(déjà résolue : relisez vos indices)</em>" : ""}` : "pause dossier"}</span></div>`; }).join("");
     el.innerHTML = `<div class="an-boite" data-a="fermerAnnonce"><div class="an-t">On tourne !</div><div class="an-s">Tour ${t} · passez à la station suivante</div><div class="an-lignes">${lignes}</div><div class="an-f">Touchez pour fermer</div></div>`;
     el.classList.remove("cache");
     clearTimeout(annonceT); annonceT = setTimeout(() => el.classList.add("cache"), 12000);
@@ -531,25 +566,14 @@
       `<main class="page pile"><section class="panneau"><h2>Qui a pris PIXEL, et comment ?</h2><p style="font-size:19px;margin:0">Chaque équipe désigne en secret un suspect et une méthode. Bon coupable : +${PTS.coupable} points. Bonne méthode : +${PTS.methode} points. Les réponses restent cachées jusqu'à la révélation.</p></section>
        <div class="equipes">${p.equipes.map((eq, i) => tuileEquipe(eq, i, "accusation")).join("")}</div>
        ${manquantes.length ? `<section class="panneau pile"><h3>Avant la finale, remettre les pages du manuel</h3>${manquantes.map(eq => `<div class="ligne"><span class="couleur-pastille" style="background:${couleur(eq.couleur).hex}"></span><span style="flex:1">${esc(eq.nom)} : ${esc(nomsFiches(eq.fiches))}</span><button class="btn petit bleu" data-a="ficheRemise" data-i="${p.equipes.indexOf(eq)}">Fiche remise</button></div>`).join("")}</section>` : ""}
-       <div class="ligne"><button class="btn grand" data-a="versFinale">Passer à la finale</button></div></main>`;
+       <div class="ligne"><button class="btn grand" data-a="versFinale">Passer à la finale : ouvrir le boîtier</button></div></main>`;
   }
 
   function vueFinale() {
-    const p = P(), f = p.finale;
-    const lance = !!f.debut, enPause = !!f.pauseDebut;
-    const repart = p.equipes.map(eq => `<div class="ligne"><span class="couleur-pastille" style="background:${couleur(eq.couleur).hex}"></span><strong style="flex:1">${esc(eq.nom)}</strong><span>${esc(nomsFiches(eq.fiches) || "aide les autres équipes")}</span></div>`).join("");
     return barre(`<span class="phase-pill">Finale</span><button class="btn contour petit" data-a="animateur">Animateur</button>`) +
-      `<main class="page pile"><div class="grille g2">
-        <section class="panneau nuit pile centre" style="justify-content:center"><span class="etiquette" style="color:var(--creme)">Système de sécurité PIXEL-LOCK</span>
-          <div class="chrono" id="chrono" style="font-size:120px;color:#fff">--:--</div>
-          <p>Erreurs : <strong>${f.penalites}</strong> (−30 s chacune)</p>
-          <div class="ligne" style="justify-content:center">
-            ${!lance ? `<button class="btn grand" data-a="finaleDemarrer">Démarrer la finale</button>` : enPause ? `<button class="btn" data-a="finalePause">Reprendre</button>` : `<button class="btn contour" style="color:#fff;border-color:#fff" data-a="finalePause">Pause</button>`}
-            ${lance ? `<button class="btn bleu" data-a="finaleErreur">Erreur −30 s</button><button class="btn" data-a="finaleOuvert">Boîtier ouvert !</button>` : ""}
-          </div></section>
-        <section class="panneau pile"><h2>Qui a quelle page du manuel</h2>${repart}
-          <p class="douce">Une personne de chaque équipe manipule le boîtier à tour de rôle, sans jamais voir de manuel. On ne manipule jamais le module dont son équipe a le manuel.</p></section>
-      </div></main>`;
+      `<main class="page pile"><section class="panneau nuit pile centre"><span class="etiquette" style="color:var(--creme)">Finale</span><h2 style="color:#fff">Le boîtier PIXEL-LOCK</h2>
+        <p>La finale se joue sur cette tablette, module par module.</p>
+        <div class="ligne" style="justify-content:center"><button class="btn grand" data-a="aller" data-v="boitier">Ouvrir le boîtier</button>${B.partie === P().creeLe ? `<button class="btn contour" style="color:#fff;border-color:#fff" data-a="finaleVersRevelation">Passer à la révélation</button>` : ""}</div></section></main>`;
   }
 
   function vueRevelation() {
@@ -699,7 +723,7 @@
             ${enq && rotation() && !rotation().fini ? `<button class="btn" data-a="tourSuivant">Tour suivant maintenant</button>` : ""}
             ${enq ? `<button class="btn bleu" data-a="versAccusation">Fin de l'enquête → accusation</button>` : ""}
             ${p.phase === "accusation" ? `<button class="btn bleu" data-a="versFinale">Passer à la finale</button>` : ""}
-            ${p.phase === "finale" ? `<button class="btn bleu" data-a="finaleOuvert">Aller à la révélation</button>` : ""}
+            ${p.phase === "finale" ? `<button class="btn bleu" data-a="${enFinalePartie() ? "finaleVersRevelation" : "finaleOuvert"}">Aller à la révélation</button>` : ""}
             <button class="btn contour" data-a="aller" data-v="accueil">Accueil (la partie reste en mémoire)</button>
           </div>`;
       }
@@ -877,7 +901,7 @@
     majEnteteBoitier();
   }
   function moduleOK(id) {
-    B.ok[id] = true; saveB(); son("ok");
+    B.ok[id] = true; saveB(); son("ok"); moduleOuvert = null;
     if (!B.chrono.debut) B.chrono.debut = now();
     if (B.ok.A && B.ok.B && B.ok.C && B.ok.D && B.ok.E) { B.ouvertA = now(); saveB(); son("fin"); }
     rendre();
@@ -892,13 +916,43 @@
       ${bandes.map((c, k) => `<rect x="${xs[k]}" y="18" width="16" height="44" fill="${BANDES[c]}"/>`).join("")}<rect x="210" y="18" width="16" height="44" fill="#C9A227"/></svg>`;
   }
 
+  /* Qui guide (équipe qui a la page du manuel) et qui manipule (un membre d'une autre équipe), module par module */
+  const MODULES_B = () => (B.expert ? ["A", "B", "C", "E", "D"] : ["A", "B", "C", "D"]);
+  const NOMS_MOD = { A: "Les fils", B: "Le bouton", C: "La séquence", D: "Le code final", E: "Le courant" };
+  function rolesBoitier() {
+    const p = P();
+    if (!p || !p.equipes || !p.equipes.length) return null;
+    const eqs = p.equipes, n = eqs.length, charge = new Array(n).fill(0), roles = {};
+    for (const m of MODULES_B()) {
+      const g = eqs.findIndex(eq => (eq.fiches || []).includes(m));
+      let cands = eqs.map((_, i) => i).filter(i => n === 1 || i !== g);
+      cands.sort((a, b) => charge[a] - charge[b] || ((a - g + n) % n) - ((b - g + n) % n));
+      const s = cands[0]; charge[s]++;
+      roles[m] = { guide: g, solveur: s };
+    }
+    return roles;
+  }
+  function pastilleEq(i) { const eq = P().equipes[i], c = couleur(eq.couleur); return `<span class="eq-tag" style="background:${c.hex};color:${c.texte}">${esc(eq.nom)}</span>`; }
+  function bandeauRoles(m) {
+    const r = rolesBoitier();
+    if (!r || !r[m]) return `<div class="roles"><div><span class="role-i">✋</span> Manipule : <b>une personne qui n'a pas vu la page ${m} du manuel</b></div><div><span class="role-i">📖</span> Guide : <b>l'équipe qui a la page ${m}</b>, sans regarder l'écran</div></div>`;
+    const { guide, solveur } = r[m];
+    return `<div class="roles"><div><span class="role-i">✋</span> Manipule : <b>un membre de</b> ${pastilleEq(solveur)}</div><div><span class="role-i">📖</span> Guide : ${guide >= 0 ? pastilleEq(guide) + ` <span class="douce-c">lit la page ${m} du manuel, sans regarder l'écran</span>` : `<b>l'équipe qui a la page ${m}</b>`}</div></div>`;
+  }
+  let moduleOuvert = null;
+  const enFinalePartie = () => { const p = P(); return !!(p && p.phase === "finale" && B.partie === p.creeLe); };
+  function finaleVersRevelation() {
+    const p = P(); if (!p) return;
+    p.finale = { debut: B.chrono.debut, pauseDebut: null, pauseCumul: B.chrono.pauseCumul || 0, penalites: B.erreurs, ouvertA: B.ouvertA || (B.chrono.debut ? now() : null) };
+    p.phase = "revelation"; p.etape = 0; save(); son("fin"); fermer(); aller("jeu");
+  }
   function vueBoitier() {
     if (B.ouvertA) {
       const t = fmt(B.ouvertA - B.chrono.debut - B.chrono.pauseCumul + B.erreurs * PENALITE_FINALE_MS);
       return `<main class="ouvert"><div class="panneau pile centre" style="background:var(--vert);color:var(--encre);max-width:900px;padding:56px">
         <span class="etiquette" style="color:var(--encre)">PIXEL-LOCK · système déverrouillé en ${t}</span><h1 style="color:var(--encre);font-size:56px">${esc(cachette())}</h1>
         <p style="font-size:20px">${pl(B.erreurs, "erreur")}. Bravo à toutes les équipes.</p>
-        <div class="ligne" style="justify-content:center"><button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div></div></main>`;
+        <div class="ligne" style="justify-content:center">${enFinalePartie() ? `<button class="btn grand" data-a="finaleVersRevelation">Passer à la révélation</button>` : `<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button>`}</div></div></main>`;
     }
     const fils = B.fils.map((c, k) => `<button class="fil ${B.debranche === k ? "debranche" : ""}" data-a="fil" data-k="${k}" ${B.ok.A ? "disabled" : ""}><span>${k + 1}</span><span class="borne"></span><span class="cable" style="background:${FILS[c]}"></span><span class="borne"></span></button>`).join("");
     const simon = SIMON.map(c => `<button data-a="simon" data-c="${c}" data-simon="${c}" style="background:${FILS[c]};color:${FILS[c]}" ${B.ok.C ? "disabled" : ""}><span style="color:rgba(0,0,0,.55)">${c.toUpperCase()}</span></button>`).join("");
@@ -917,17 +971,33 @@
         ${!B.chrono.debut ? `<button class="btn" data-a="boitierDemarrer">Démarrer</button>` : ""}
         <button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="boitierMenu">Animateur</button>
       </div>
-      <main class="boitier ${B.expert ? "expert" : ""}">
-        <section class="module ${B.ok.A ? "resolu" : ""}"><h3><span class="led ${B.ok.A ? "ok" : ""}"></span>Module A · Les fils</h3><p style="margin:0;opacity:.75;font-size:15px">Touchez un fil pour le débrancher.</p><div class="fils">${fils}</div></section>
-        <section class="module ${B.ok.B ? "resolu" : ""}"><h3><span class="led ${B.ok.B ? "ok" : ""}"></span>Module B · Le bouton</h3>
+      ${corpsBoitier(fils, simon, progC, dFerme, moduleE)}`;
+  }
+
+  function corpsBoitier(fils, simon, progC, dFerme, moduleE) {
+    const contenu = {
+      A: `<section class="module ${B.ok.A ? "resolu" : ""}"><h3><span class="led ${B.ok.A ? "ok" : ""}"></span>Module A · Les fils</h3><p style="margin:0;opacity:.75;font-size:15px">Touchez un fil pour le débrancher.</p><div class="fils">${fils}</div></section>`,
+      B: `<section class="module ${B.ok.B ? "resolu" : ""}"><h3><span class="led ${B.ok.B ? "ok" : ""}"></span>Module B · Le bouton</h3>
           <button class="gros-bouton" id="grosBouton" style="background:${BOUTONS[B.bouton]}" ${B.ok.B ? "disabled" : ""}>APPUYER</button>
-          <div class="jauge"><div id="jaugeB"></div></div></section>
-        <section class="module ${B.ok.C ? "resolu" : ""}"><h3><span class="led ${B.ok.C ? "ok" : ""}"></span>Module C · La séquence</h3>
-          <div class="simon">${simon}</div><div class="ligne"><button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="voirSequence" ${B.ok.C ? "disabled" : ""}>Voir la séquence</button><div class="puces" style="color:#fff">${progC}</div></div></section>
-        ${moduleE}
-        <section class="module module-d ${B.ok.D ? "resolu" : ""} ${dFerme ? "ferme" : ""}"><h3><span class="led ${B.ok.D ? "ok" : ""}"></span>Module D · Le code final</h3>
-          <div class="afficheur" style="font-size:44px">${(B.code + "____").slice(0, 4).split("").join(" ")}</div>${paveHTML("boitier")}</section>
-      </main>`;
+          <div class="jauge"><div id="jaugeB"></div></div></section>`,
+      C: `<section class="module ${B.ok.C ? "resolu" : ""}"><h3><span class="led ${B.ok.C ? "ok" : ""}"></span>Module C · La séquence</h3>
+          <div class="simon">${simon}</div><div class="ligne"><button class="btn contour petit" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="voirSequence" ${B.ok.C ? "disabled" : ""}>Voir la séquence</button><div class="puces" style="color:#fff">${progC}</div></div></section>`,
+      E: moduleE,
+      D: `<section class="module module-d ${B.ok.D ? "resolu" : ""}"><h3><span class="led ${B.ok.D ? "ok" : ""}"></span>Module D · Le code final</h3>
+          <div class="afficheur" style="font-size:44px">${(B.code + "____").slice(0, 4).split("").join(" ")}</div>${paveHTML("boitier")}</section>`
+    };
+    if (moduleOuvert && !(moduleOuvert === "D" && dFerme) && !B.ok[moduleOuvert]) {
+      return `<main class="boitier-page"><div class="bp-haut"><button class="btn contour" style="color:#fff;border-color:rgba(255,255,255,.6)" data-a="moduleFermer">← Tous les modules</button>${bandeauRoles(moduleOuvert)}</div>
+        <div class="bp-module">${contenu[moduleOuvert]}</div></main>`;
+    }
+    const tuiles = MODULES_B().map(m => {
+      const ferme = m === "D" && dFerme, ok = B.ok[m];
+      return `<button class="tuile-module ${ok ? "resolu" : ""} ${ferme ? "ferme" : ""}" data-a="moduleOuvrir" data-m="${m}" ${ok || ferme ? "disabled" : ""}>
+        <div class="tm-t"><span class="led ${ok ? "ok" : ""}"></span><strong>Module ${m}</strong><span>${NOMS_MOD[m]}</span></div>
+        ${ok ? `<div class="tm-etat">Désamorcé ✓</div>` : (ferme ? `<div class="tm-etat">🔒 Se débloque quand ${MODULES_B().filter(x => x !== "D").join(", ")} sont désamorcés</div>` : "") + bandeauRoles(m)}
+      </button>`;
+    }).join("");
+    return `<main class="boitier-tableau"><p class="bt-consigne">Choisissez un module. Un seul module s'affiche à la fois : seule la personne qui manipule regarde l'écran, l'équipe qui guide lit son manuel sans le voir.</p><div class="tuiles-modules">${tuiles}</div></main>`;
   }
 
   /* Bouton du module B : appui bref, long (3 s) ou double */
@@ -986,7 +1056,7 @@
           ${B.expert ? `<div><strong>Module E :</strong> ${B.ohm.I} mA (R = ${B.ohm.R} Ω : ${ORDRE_BANDES[B.ohm.d1]}, ${ORDRE_BANDES[B.ohm.d2]}, ${ORDRE_BANDES[B.ohm.m]} ; U = ${B.ohm.U} V ; I = U / R)</div>` : ""}
           <div><strong>Module D :</strong> ${codeAttendu()}</div></div>
           <div class="champ mt"><label>Cachette de PIXEL affichée à l'ouverture (vide = texte par défaut)</label><input type="text" placeholder="${esc(S.cachette)}" value="${esc(R().cachette)}" data-set="txt" data-k="cachette"></div>
-          <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button></div>
+          <div class="ligne mt">${B.chrono.debut ? `<button class="btn" data-a="boitierPause">${B.chrono.pauseDebut ? "Reprendre le chrono" : "Mettre en pause"}</button>` : ""}${enFinalePartie() ? `<button class="btn bleu" data-a="finaleVersRevelation">Arrêter la finale et passer à la révélation</button>` : `<button class="btn bleu" data-a="boitierNouveau">Nouvelle combinaison</button><button class="btn contour" data-a="aller" data-v="accueil">Accueil</button>`}</div>
           <div class="ligne mt"><span class="douce" style="flex:1">Niveau du boîtier : <strong>${B.expert ? "Expert (5 modules, 3 erreurs max)" : "Découverte"}</strong></span><button class="btn contour petit" data-a="niveauBoitier">Passer en ${B.expert ? "Découverte" : "Expert"}</button></div>`;
       }
     };
@@ -1081,7 +1151,7 @@
     versFinale() {
       const p = P();
       const sans = p.equipes.filter(eq => !eq.accusation).length;
-      const go = () => { p.phase = "finale"; save(); fermer(); rendre(); };
+      const go = () => { p.phase = "finale"; save(); fermer(); B = nouveauBoitier(); B.partie = p.creeLe; saveB(); moduleOuvert = null; aller("boitier"); };
       if (sans) demander(pl(sans, "équipe") + " sans accusation", "Elles ne pourront plus accuser après. Passer quand même à la finale ?", "Passer à la finale", go);
       else go();
     },
@@ -1125,6 +1195,9 @@
       else { B.prog = 0; saveB(); erreurBoitier("Mauvaise couleur : la séquence repart de zéro, −30 secondes"); rendre(); }
     },
     voirSequence() { voirSequence(); },
+    moduleOuvrir(d) { moduleOuvert = d.m; rendre(); },
+    moduleFermer() { moduleOuvert = null; rendre(); },
+    finaleVersRevelation() { finaleVersRevelation(); },
     boitierDemarrer() { B.chrono.debut = now(); saveB(); son("fin"); rendre(); },
     boitierMenu() { avecCode(() => ouvrir(fenetreBoitierAnimateur())); },
     boitierPause() { if (B.chrono.pauseDebut) reprendre(B.chrono); else pause(B.chrono); saveB(); fermer(); rendre(); },

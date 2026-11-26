@@ -92,7 +92,7 @@ window.SCENARIO = {
     },
     {
       id: "E4", indice: 1, nom: "Le journal binaire", domaine: "Informatique", code: "1306", minutes: 8, reference: true,
-      coups: ["Lis la carte « Comment lire un nombre binaire » : prends le jeu HEURE pour l'heure et le jeu MINUTE pour les minutes, retourne côté points sous chaque 1, et compte les points.", "10111 en heures, ça fait 23. Attention : deux lignes ont cette heure-là, vérifie aussi les minutes."],
+      coups: ["Prends la carte « Le binaire, c'est une rangée de lampes » : écris le nombre dans la grille, calé à droite, puis additionne les valeurs au-dessus des 1 (16, 8, 4, 2, 1). Les cartes à points font la même chose.", "10111 en heures, ça fait 23. Attention : deux lignes ont cette heure-là, vérifie aussi les minutes."],
       solution: "Ligne 4 : 10111 = 16 + 4 + 2 + 1 = 23 et 101111 = 32 + 8 + 4 + 2 + 1 = 47, donc 23h47. Son code de session : 1306.",
       expert: { code: "1306",
         coups: ["Les minutes sont en hexadécimal : 2F = 2 × 16 + 15 = 47. Deux lignes annoncent 23h47 : l'une a été falsifiée.", "Bit de contrôle : comptez les 1 de l'heure (binaire) et des minutes (chaque chiffre hexa = 4 bits, F = 1111). Si le total est impair, P doit valoir 1. La ligne dont P ne colle pas est la fausse."],
